@@ -2,12 +2,12 @@
 <html lang="en"> 
 <head> 
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../styles.css">
     <title>Juego by Kepri Studios</title>
     <link id="icono" rel="icon" type="image/x-icon" href="/assets/kepri-logo.png">
     <script src="//cdn.jsdelivr.net/npm/phaser@3.22.0/dist/phaser.js"></script>
 </head>
-<body style="background-image: url('assets/fondo.png');">
+<body style="background-image: url('../assets/fondo.png');">
     <div class="columnaIzq">
         <button class = "button medium-btn" style="width:100%;" onclick="location.href = '/';">Volver</button>
         <div id="descripcion">
@@ -17,7 +17,7 @@
             </p> 
         </div>
         <div id="scoreBoard">
-            <p class="descripcion" style="background-image: url('assets/scoreboad.png');">
+            <p class="descripcion" style="background-image: url('../assets/scoreboad.png');">
                 Mejores puntuaciones:<br>
                 -- Aún no hay datos --
             </p> 
@@ -26,12 +26,12 @@
     <div class="columnaDer">
         <button id="siguienteJuego" class = "button medium-btn" style="width:100%;" onclick="location.href = '/juegos/snake';">Siguiente juego</button>
          <!--Botones de ajustes (silenciar, reiniciar)-->
-        <div id="ajustes" style="background-image: url('assets/sky.png');">
+        <div id="ajustes" style="background-image: url('../assets/sky.png');">
             <button id="mute" class = "button small-btn" onclick="muteGame()">
-                <img id='muteImg' src='./assets/sonido.png' alt="mute"> 
+                <img id='muteImg' src='../assets/sonido.png' alt="mute"> 
             </button>
             <button id="restart" class = "button small-btn" onclick="location.reload()">
-                <img src='./assets/restart.png' alt="mute"> 
+                <img src='../assets/restart.png' alt="mute"> 
             </button>
         </div>
     </div>
@@ -85,7 +85,7 @@
             const response3 = await fetch(request3);
             const scores = JSON.parse(await response3.text());
             let htmlText = `
-                <p class="descripcion" style="background-image: url('assets/scoreboad.png');">
+                <p class="descripcion" style="background-image: url('../assets/scoreboad.png');">
                     Mejores puntuaciones:<br>`
             // Esto habrá una mejor forma de hacerlo
             for(let i = 0; i < scores[0].length; i++){
