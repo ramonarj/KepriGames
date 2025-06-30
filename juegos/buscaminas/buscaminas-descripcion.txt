@@ -1,0 +1,7 @@
+Juega al clásico juego del Buscaminas <br>
+<br>
+CONTROLES: <br> 
+- Clic izquierdo en una casilla para destaparla <br>
+- Clic derecho en una casilla para marcarla como mina <br>
+<br>
+Kepri Studios, 2017-2025

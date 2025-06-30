@@ -1,0 +1,5 @@
+El 'Juego de la Vida' es un juego de 0 jugadores creado por John Conay en 1970.<br>
+En él, se pinta un estado inicial y se simula su evolución hasta el infinito. Cada 'célula'
+(cuadrados blancos) debe cumplir varios requisitos para sobrevivir una generación más<br>
+<br><br>
+Kepri Studios, 2025

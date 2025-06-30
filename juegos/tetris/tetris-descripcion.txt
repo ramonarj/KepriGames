@@ -1,0 +1,7 @@
+Juega al clásico juego del Tetris<br>
+<br>
+CONTROLES: <br> 
+WASD - Mover al Jugador 1 <br>
+Flechas de dirección - Mover al Jugador 2 <br>
+<br>
+Kepri Studios, 2024-2025

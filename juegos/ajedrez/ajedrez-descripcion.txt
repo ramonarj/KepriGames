@@ -1,0 +1,8 @@
+Juega al clásico juego del Ajedrez, en multijugador local, <br>
+multijugador online o contra la máquina <br>
+<br>
+CONTROLES: <br> 
+Clic izquierdo en una pieza para seleccionarla <br>
+Vuelve a hacer clic izquierdo para mover la pieza a la casilla seleccionada <br>
+<br>
+Kepri Studios, 2025

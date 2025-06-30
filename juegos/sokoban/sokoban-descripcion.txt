@@ -1,0 +1,12 @@
+Juega al clásico juego del Sokoban <br>
+<br>
+Coloca todas las cajas del nivel en la casilla objetivo, ¡pero ojo!
+No las pegues a una pared o ya no podrás empujarlas.
+<br>
+Intenta ganar en el menor número de movimientos posibles
+<br><br>
+CONTROLES: <br> 
+- Flechas de dirección para mover el personaje <br>
+- Retroceso para deshacer el último movimiento <br>
+<br>
+Kepri Studios, 2025

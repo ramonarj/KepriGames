@@ -1,0 +1,131 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css">
+    <title>Juego by Kepri Studios</title>
+    <link id="icono" rel="icon" type="image/x-icon" href="/assets/kepri-logo.png">
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.22.0/dist/phaser.js"></script>
+</head>
+<body style="background-image: url('assets/fondo.png');">
+    <div class="columnaIzq">
+        <button class = "button medium-btn" style="width:100%;" onclick="location.href = '/';">Volver</button>
+        <div id="descripcion">
+            <p id="parrafo" style="background-image: url('assets/sky.png');">
+                Descripción del juego <br>
+                Controles y demás
+            </p> 
+        </div>
+        <div id="scoreBoard">
+            <p class="descripcion" style="background-image: url('assets/scoreboad.png');">
+                Mejores puntuaciones:<br>
+                -- Aún no hay datos --
+            </p> 
+        </div>
+    </div>
+    <div class="columnaDer">
+        <button id="siguienteJuego" class = "button medium-btn" style="width:100%;" onclick="location.href = '/juegos/snake';">Siguiente juego</button>
+         <!--Botones de ajustes (silenciar, reiniciar)-->
+        <div id="ajustes" style="background-image: url('assets/sky.png');">
+            <button id="mute" class = "button small-btn" onclick="muteGame()">
+                <img id='muteImg' src='./assets/sonido.png' alt="mute"> 
+            </button>
+            <button id="restart" class = "button small-btn" onclick="location.reload()">
+                <img src='./assets/restart.png' alt="mute"> 
+            </button>
+        </div>
+    </div>
+   
+    <!--Cargador dinámico de recursos para la página-->
+    <script>
+        // Con "window.location.pathname" podemos crear una página dinámica, 
+        // gracias a que devuelve la ruta relativa desde '/', y de ahí sacamos el nombre del juego actual
+        const gameName = window.location.pathname.substr(8);
+
+        // a) Cambiar el icono y título de la pestaña por el del juego actual
+        document.getElementById("icono").href = gameName + '/assets/' + gameName + "_icon.png";
+        const nombreBonito = gameName.charAt(0).toUpperCase() + gameName.substr(1);
+        document.title = nombreBonito + ' by Kepri Studios';
+
+        // b) Crear el script con el juego que corresponda
+        var s = document.createElement("script");
+        s.type = "module"; //text/javascript
+        s.src = gameName + '/' + gameName + ".js";
+        s.id = "juegoPhaser";
+        document.body.appendChild(s);
+
+        // c) Añadir el juego siguiente al que jugar
+        populatePage(gameName);
+
+        // Poblar el botón de 'siguiente juego', leyendo los nombres de un archivo JSON
+        async function populatePage(gameName){
+            // Hacemos una petición HTTP y esperamos la respuesta
+            const request = new Request('juegos.json');
+            const response = await fetch(request);
+            // Transformar la promesa en un objeto JS (un array)
+            const nombres = await response.json();
+
+            // 1) El enlace al siguiente juego de la lista
+            const ind = (nombres.indexOf(gameName) + 1) % nombres.length;
+            document.getElementById("siguienteJuego").onclick = function() { location.href = '/juegos/' + nombres[ind];};
+
+            // 2) La descripción del juego
+            const request2 = new Request(gameName + '/' + gameName + '-descripcion.txt');
+            const response2 = await fetch(request2);
+            const desc = await response2.text();
+            document.getElementById("descripcion").innerHTML = `
+                <p id="parrafo" class="descripcion">
+                    ${desc}
+                </p>
+            `
+
+            // 3) La tabla de puntuaciones máximas
+            const request3 = new Request(gameName + '/hiscore.json');
+            const response3 = await fetch(request3);
+            const scores = JSON.parse(await response3.text());
+            let htmlText = `
+                <p class="descripcion" style="background-image: url('assets/scoreboad.png');">
+                    Mejores puntuaciones:<br>`
+            // Esto habrá una mejor forma de hacerlo
+            for(let i = 0; i < scores[0].length; i++){
+                htmlText += `- `;
+                htmlText += scores[0][i];
+                htmlText += `: `;
+                htmlText += scores[1][i];
+                htmlText += `<br>`;
+            }
+            htmlText += `</p>`;
+            document.getElementById("scoreBoard").innerHTML = htmlText;
+        }
+
+        var muted = false;
+
+        // Para llamar funciones de dentro del script
+        //const module = { gameName: gameName };
+        //window.gameName = gameName; // otra alternativa
+    </script>
+
+    <!--Callback para el botón de 'mute'-->
+    <script type="module">
+        let route = `./${gameName}/${gameName}.js`;
+        // Al ser una ruta dinámica, hemos de usar la función 'import' (asíncrona), para tener acceso al módulo ya cargado 
+        // desde el callback
+        import(route).then(moduloJuego => 
+        {
+            window.muteGame = function(){
+                // Primero le decimos al juego que se silencie
+                moduloJuego.muteGame();
+
+                // y añadimos la funcionalidad de cambiar el sprite del botón de la página
+                muted = !muted;
+                if(muted)
+                    document.getElementById('muteImg').src = './assets/mute.png';
+                else
+                    document.getElementById('muteImg').src = './assets/sonido.png';
+            }
+        });
+    </script>
+    <!--El juego en sí-->
+    
+</body>
+</html>

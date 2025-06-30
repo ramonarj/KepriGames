@@ -1,0 +1,8 @@
+En 'Snake', el objetivo del juego es comer tantas frutas como puedas
+a la vez que evitas chocarte con tu propio cuerpo. <br>
+Cada vez que comas una fruta, tu cuerpo se hará más largo. <br>
+<br>
+CONTROLES: <br> 
+WASD - Mover la serpiente <br>
+<br>
+Kepri Studios, 2024-2025
