@@ -30,14 +30,16 @@
                 // y lo hacemos hijo del contenedor.
                 for(let i = 0; i < listaNombres.length; i++){
                     const nombreBonito = listaNombres[i].charAt(0).toUpperCase() + listaNombres[i].substr(1);
+					const nombreJuego = listaNombres[i];
  
                     var enlace = document.createElement("a");
-                    enlace.innerHTML = 
-                    `<a href='juegos/${listaNombres[i]}' class='contenedor link'> 
+                    enlace.innerHTML =
+                    `<a href='juegos/juego.html' class='contenedor link'> 
                         <img src='juegos/${listaNombres[i]}/assets/${listaNombres[i]}-thumb.png' class='contenedor contenido'> 
                         <img src='assets/recuadro.png' class='contenedor recuadro'/> 
                         <h3>${nombreBonito}</h3>
                     </a>`;
+					enlace.onclick = function() { window.name = nombreJuego; }
                     document.getElementById("contenedorJuegos").appendChild(enlace);
                 }
             }

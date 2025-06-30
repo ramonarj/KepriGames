@@ -40,7 +40,8 @@
     <script>
         // Con "window.location.pathname" podemos crear una página dinámica, 
         // gracias a que devuelve la ruta relativa desde '/', y de ahí sacamos el nombre del juego actual
-        const gameName = window.location.pathname.substr(8);
+        //const gameName = window.location.pathname.substr(8);
+		const gameName = window.name;
 
         // a) Cambiar el icono y título de la pestaña por el del juego actual
         document.getElementById("icono").href = gameName + '/assets/' + gameName + "_icon.png";
