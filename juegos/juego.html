@@ -3,13 +3,13 @@
 <head> 
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="../styles.css">
-    <title>Juego by Kepri Studios</title>
+    <title>Juego - Kepri Games</title>
     <link id="icono" rel="icon" type="image/x-icon" href="/assets/kepri-logo.png">
     <script src="//cdn.jsdelivr.net/npm/phaser@3.22.0/dist/phaser.js"></script>
 </head>
 <body style="background-image: url('../assets/fondo.png');">
     <div class="columnaIzq">
-        <button class = "button medium-btn" style="width:100%;" onclick="location.href = '/';">Volver</button>
+        <button class = "button medium-btn" style="width:100%;" onclick="location.href = '../';">Volver</button>
         <div id="descripcion">
             <p id="parrafo" style="background-image: url('assets/sky.png');">
                 Descripción del juego <br>
@@ -38,15 +38,23 @@
    
     <!--Cargador dinámico de recursos para la página-->
     <script>
-        // Con "window.location.pathname" podemos crear una página dinámica, 
-        // gracias a que devuelve la ruta relativa desde '/', y de ahí sacamos el nombre del juego actual
-        //const gameName = window.location.pathname.substr(8);
-		const gameName = window.name;
+        var gameName;
+        if(location.search.includes("?game="))
+        {
+            gameName = location.search.substr(6);
+        }
+        else if(window.name != ""){
+            gameName = window.name;
+            location.search = "?game=" + window.name;
+        }
+        else
+            console.log("ERROR: juego no existe");
+			
 
         // a) Cambiar el icono y título de la pestaña por el del juego actual
         document.getElementById("icono").href = gameName + '/assets/' + gameName + "_icon.png";
         const nombreBonito = gameName.charAt(0).toUpperCase() + gameName.substr(1);
-        document.title = nombreBonito + ' by Kepri Studios';
+        document.title = nombreBonito + ' - Kepri Games';
 
         // b) Crear el script con el juego que corresponda
         var s = document.createElement("script");
@@ -68,7 +76,7 @@
 
             // 1) El enlace al siguiente juego de la lista
             const ind = (nombres.indexOf(gameName) + 1) % nombres.length;
-            document.getElementById("siguienteJuego").onclick = function() { location.href = '/juegos/' + nombres[ind];};
+            document.getElementById("siguienteJuego").onclick = function() { window.name = nombres[ind]; location.href = 'juego.html';};
 
             // 2) La descripción del juego
             const request2 = new Request(gameName + '/' + gameName + '-descripcion.txt');
@@ -120,9 +128,9 @@
                 // y añadimos la funcionalidad de cambiar el sprite del botón de la página
                 muted = !muted;
                 if(muted)
-                    document.getElementById('muteImg').src = './assets/mute.png';
+                    document.getElementById('muteImg').src = '../assets/mute.png';
                 else
-                    document.getElementById('muteImg').src = './assets/sonido.png';
+                    document.getElementById('muteImg').src = '../assets/sonido.png';
             }
         });
     </script>
