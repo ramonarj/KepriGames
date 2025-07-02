@@ -1,0 +1,7 @@
+Juega a PacMan (Toru Iwatani, 1980) y evita a los fantasmas mientras te comes todos los puntos.
+Si consigues tomarte una vitamina, podrás comértelos a ellos también.<br>
+<br>
+CONTROLES: <br> 
+Flechas de dirección - Mover a PacMan <br>
+<br>
+Kepri Studios, 2025

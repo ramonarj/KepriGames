@@ -69,3 +69,13 @@ export function muteGame(){
     //console.log("Muteadisimo el " + gameName);
     game.sound.mute = !game.sound.mute;
 }
+
+export function loadFile(path){
+    var result = null;
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open("GET", path, false); // false -> síncrono
+    xmlhttp.send();
+    if(xmlhttp.status === 200)
+        result = xmlhttp.responseText;
+    return result;
+}
