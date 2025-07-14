@@ -35,11 +35,15 @@
                     var enlace = document.createElement("a");
                     enlace.innerHTML =
                     `<a href='juegos/juego.html' class='contenedor link'> 
-                        <img src='juegos/${listaNombres[i]}/assets/${listaNombres[i]}-thumb.png' class='contenedor contenido'> 
+                        <img src='juegos/${listaNombres[i]}/assets/${listaNombres[i]}-thumb.png' id='${listaNombres[i]}-thumb' 
+                            class='contenedor contenido'> 
                         <img src='assets/recuadro.png' class='contenedor recuadro'/> 
                         <h3>${nombreBonito}</h3>
                     </a>`;
-					enlace.onclick = function() { window.name = nombreJuego; }
+                    // Callbacks para el enlace
+                    enlace.onclick = function() { window.name = nombreJuego; };
+                    enlace.onmouseover = function() { document.getElementById(nombreJuego + "-thumb").src = `juegos/${nombreJuego}/assets/${nombreJuego}-gif.gif`; };
+                    enlace.onmouseout = function() { document.getElementById(nombreJuego + "-thumb").src = `juegos/${nombreJuego}/assets/${nombreJuego}-thumb.png`; };
                     document.getElementById("contenedorJuegos").appendChild(enlace);
                 }
             }
