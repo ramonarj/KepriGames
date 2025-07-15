@@ -15,29 +15,17 @@
     <a href='/'> 
         <img src="assets/kepri_banner.png" class="centrado"</img>
     </a>
-    <h1>Bienvenido a Kepri Games</h1>
     <nav class="categorias vertical">
         <div id="verticalCategoriesNav" class="categories-menu-list bg-darker">
-            <a class="ellipsis rel category-menu-link new-games-icon" href="https://www.minijuegos.com/juegos-diarios" title="Juegos nuevos">
-                <img class="icon" src="https://s3.minijuegosgratis.com/media/icons/navbar/icon-navbar-new-color.svg?v=_1743436611" width="20" height="20">
-                <span>Juegos nuevos</span>
-                <span class="online-presence-badge new-games-mode"></span>
-            </a>
-            <a class="ellipsis rel enlaceCategoria " href="https://www.minijuegos.com/multijugador" title="Juegos Multijugador">
-                <img src="https://s3.minijuegosgratis.com/media/icons/categories/svg/navbar/icon-cat-multiplayer.svg?v=_1743436611" width="20" height="20">
-                <span>Multijugador</span>
-                <span class="js-tags-usage online-presence-badge regenerated" data-tag-id="[12]" style="" data-binded="1">
-            </a>
-            <hr class="divider">
         </div>
     </nav>
     <div id= "contenedorJuegos" class="juegos">
-        <h2 class="separador">Juegos clásicos para navegador</h2>
+        <h2 id="categ" class="separador">Juegos de ??</h2>
         <!--Cargador dinámico de recursos para la página-->
         <script>
-            populateContainer("contenedorJuegos", 'juegos/juegos.json');
-            populateContainer("contenedorProximos", 'juegos/proximos.json');
+            //populateContainer("contenedorJuegos", 'juegos/juegos.json');
             populateSidebar("verticalCategoriesNav", 'juegos/categorias.json');
+            populatePro("contenedorJuegos", window.name);
 
             // Crear los enlaces de los juegos
             async function populateContainer(containerId, gameList){
@@ -62,13 +50,10 @@
                     </a>`;
                     // Callbacks para el enlace
                     enlace.onclick = function() { window.name = nombreJuego; };
-                    const req = new Request(`${rutaIconos}-gif.gif`);
-                    const res = await fetch(req);
-                    if(res.ok){ // si hay GIF disponible
-                        enlace.onmouseover = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-gif.gif`; };
-                    }
+                    enlace.onmouseover = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-gif.gif`; };
                     enlace.onmouseout = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-thumb.png`; };
                     document.getElementById(containerId).appendChild(enlace);
+                    document.getElementById("categ").innerHTML = "Juegos de " + window.name;
                 }
             }
 
@@ -99,34 +84,65 @@
                     document.getElementById(containerId).appendChild(enlace);
                 }
             }
+
+            // Crear los enlaces de los juegos
+            async function populatePro(containerId, category){
+                const request = new Request('juegos/cate.json');
+                const response = await fetch(request);
+                const listaCategorias = await response.json();
+
+                // Obtener los juegos que alberga esa categoría
+                const cat = listaCategorias.find(({ name }) => name === category);
+                const listaNombres = cat.games;
+
+                // Por cada nombre del JSON, creamos un enlace con su nombre y miniatura correspondiente, 
+                // y lo hacemos hijo del contenedor dado.
+                for(let i = 0; i < listaNombres.length; i++){
+                    console.log(listaNombres[i].name);
+                    const nombreBonito = listaNombres[i].charAt(0).toUpperCase() + listaNombres[i].substr(1);
+					const nombreJuego = listaNombres[i];
+                    const rutaIconos = `juegos/${listaNombres[i]}/assets/${listaNombres[i]}`;
+ 
+                    var enlace = document.createElement("a");
+                    enlace.innerHTML =
+                    `<a href='juegos/juego.html' class='contenedor link'> 
+                        <img src='${rutaIconos}-thumb.png' id='${listaNombres[i]}-thumb' 
+                            class='contenedor contenido'> 
+                        <img src='assets/recuadro.png' class='contenedor recuadro'/> 
+                        <h3>${nombreBonito}</h3>
+                    </a>`;
+                    // Callbacks para el enlace
+                    enlace.onclick = function() { window.name = nombreJuego; };
+                    enlace.onmouseover = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-gif.gif`; };
+                    enlace.onmouseout = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-thumb.png`; };
+                    document.getElementById(containerId).appendChild(enlace);
+                    document.getElementById("categ").innerHTML = "Juegos de " + window.name;
+                }
+            }
+        </script>
+
+        <script>
+        var category;
+        if(location.search.includes("?category="))
+        {
+            genre = location.search.substr(10);
+        }
+        else if(window.name != ""){
+            category = window.name;
+            location.search = "?category=" + window.name;
+        }
+        else
+            console.log("ERROR: categoría no existe");
+			
+
+        // a) Cambiar el icono y título de la pestaña por el del juego actual
+        //document.getElementById("icono").href = category + '/assets/' + gameName + "_icon.png";
+        const nombreBonito = category.charAt(0).toUpperCase() + category.substr(1);
+        document.title = 'Juegos ' + nombreBonito + ' - Kepri Games';
+
+        // c) Añadir los resultados
+        //populatePage(gameName);
         </script>
     </div>
-    <div id= "contenedorProximos" class="juegos">
-        <h2 class="separador">Próximamente</h2>
-    </div>
-    <!---- Prueba API Itch.io ---->
-    <h2 class="separador">O compra desde nuestra página de Itch.io</h2>
-    <iframe frameborder="0" src="https://itch.io/embed/2953658?linkback=true&amp;border_width=0&amp;bg_color=2c6034&amp;fg_color=ffffff&amp;link_color=e9123b&amp;border_color=702f68" width="206" height="165">
-        <a href="https://kepri-studios.itch.io/bye-bye-banner">Bye Bye Banner by Kepri Studios</a>
-    </iframe>
-    <iframe frameborder="0" src="https://itch.io/embed/3654868?border_width=0&amp;bg_color=3d99de&amp;fg_color=0009d5&amp;link_color=d66117&amp;border_color=ff5454" width="206" height="165">
-        <a href="https://kepri-studios.itch.io/azulejo-parejo">Azulejo Parejo by Kepri Studios</a>
-    </iframe>
-    <h3 class="separador" id="pie">Contacta con nosotros:</h3>
-    <iframe
-        id="inlineFrameExample"
-        title="Inline Frame Example"
-        width="300"
-        height="200"
-        src="https://www.openstreetmap.org/export/embed.html?bbox=-6.007820963859558%2C37.3884784746256%2C-6.000922322273255%2C37.39120625041843&amp;layer=mapnik&amp;marker=37.38984659979383%2C-6.004371643066406">
-    </iframe>
-	<figure>
-        <img src="assets/kepri-logo.png" class="animado"/>
-    </figure>
-    <footer>
-        <p>Contacto:<br>
-            <a href="mailto:kepri.spain@gmail.com">kepri.spain@gmail.com</a>
-        </p>
-    </footer>
 </body>
 </html>

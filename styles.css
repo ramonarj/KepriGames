@@ -6,6 +6,9 @@ body{
 h1 {
     text-align: center;
 }
+h2 {
+    text-align: center;
+}
 
 .separador{
     background-color: #cfc47a;
@@ -97,6 +100,41 @@ footer {
     color:rgb(48, 14, 183);
     box-shadow: 4px 4px 5px #523b5b;
     text-shadow: 3px 3px 10px #523b5b;
+}
+
+.categorias {
+    position: fixed;
+    top: 40px;
+    left: 0;
+    width: 100px;
+    height: calc(100vh - 70px);
+    z-index: 7;
+}
+
+.categorias #verticalCategoriesNav {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    padding: 16px 0 20px 0;
+    flex-direction: column;
+    overflow-y: hidden;
+    overflow-x: hidden;
+    overflow-anchor:none;
+    background-color: #1e1d76;
+    box-sizing: border-box;
+    transition: margin .4s ease-in-out;
+}
+
+.enlaceCategoria
+{
+    display: flex;
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    color: #ffffff;
+    font-size: 18px;
+    width: 200px;
+    height: 34px;
+    text-decoration:none;
 }
 
 /*

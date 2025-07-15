@@ -1,0 +1,8 @@
+[
+    {"name": "arcade", "games": ["pacman", "arkanoid", "invaders"] },
+    {"name": "windows", "games": ["buscaminas", "solitario"] },
+    {"name": "movil", "games": ["snake"] },
+    {"name": "mesa", "games": ["ajedrez", "solitario"] },
+    {"name": "cartas", "games": ["solitario"] },
+    {"name": "otros", "games": ["vida"] }
+]
