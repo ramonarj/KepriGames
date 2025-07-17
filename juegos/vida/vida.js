@@ -1,4 +1,6 @@
 // Ramón Arjona Quiñones, 2017-2025
+//TODO: permitir guardar una configuración concreta para luego cargarla de archivo, mostrando todas las que se han
+// guardado y permitiendo también borrarlas
 const TAM_CASILLA = 16;
 const FILAS = 40;
 const COLUMNAS = 40;

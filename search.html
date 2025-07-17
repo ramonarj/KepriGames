@@ -25,37 +25,7 @@
         <script>
             //populateContainer("contenedorJuegos", 'juegos/juegos.json');
             populateSidebar("verticalCategoriesNav", 'juegos/categorias.json');
-            populatePro("contenedorJuegos", window.name);
-
-            // Crear los enlaces de los juegos
-            async function populateContainer(containerId, gameList){
-                const request = new Request(gameList);
-                const response = await fetch(request);
-                const listaNombres = await response.json();
-
-                // Por cada nombre del JSON, creamos un enlace con su nombre y miniatura correspondiente, 
-                // y lo hacemos hijo del contenedor dado.
-                for(let i = 0; i < listaNombres.length; i++){
-                    const nombreBonito = listaNombres[i].charAt(0).toUpperCase() + listaNombres[i].substr(1);
-					const nombreJuego = listaNombres[i];
-                    const rutaIconos = `juegos/${listaNombres[i]}/assets/${listaNombres[i]}`;
- 
-                    var enlace = document.createElement("a");
-                    enlace.innerHTML =
-                    `<a href='juegos/juego.html' class='contenedor link'> 
-                        <img src='${rutaIconos}-thumb.png' id='${listaNombres[i]}-thumb' 
-                            class='contenedor contenido'> 
-                        <img src='assets/recuadro.png' class='contenedor recuadro'/> 
-                        <h3>${nombreBonito}</h3>
-                    </a>`;
-                    // Callbacks para el enlace
-                    enlace.onclick = function() { window.name = nombreJuego; };
-                    enlace.onmouseover = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-gif.gif`; };
-                    enlace.onmouseout = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-thumb.png`; };
-                    document.getElementById(containerId).appendChild(enlace);
-                    document.getElementById("categ").innerHTML = "Juegos de " + window.name;
-                }
-            }
+            populateCategory("contenedorJuegos", window.name);
 
             // Crear los enlaces de las categorías
             async function populateSidebar(containerId, genresList){
@@ -73,7 +43,7 @@
                     var enlace = document.createElement("a");
                     enlace.innerHTML = 
                     `<a class="ellipsis rel enlaceCategoria" href="search.html" title="Juegos de ${nombreGenero}">
-                        <img src="assets/kepri-logo.png" width="20" height="20">
+                        <img src="categorias/${nombreGenero}-logo.png" width="20" height="20">
                         <span>${nombreBonito}</span>
                         <span class="js-tags-usage online-presence-badge regenerated" data-tag-id="[12]" style="" data-binded="1">
                     </a>`;
@@ -85,8 +55,8 @@
                 }
             }
 
-            // Crear los enlaces de los juegos
-            async function populatePro(containerId, category){
+            // Crear los enlaces de los juegos correspondientes a la categoría dada
+            async function populateCategory(containerId, category){
                 const request = new Request('juegos/cate.json');
                 const response = await fetch(request);
                 const listaCategorias = await response.json();
@@ -125,7 +95,7 @@
         var category;
         if(location.search.includes("?category="))
         {
-            genre = location.search.substr(10);
+            category = location.search.substr(10);
         }
         else if(window.name != ""){
             category = window.name;
@@ -135,13 +105,8 @@
             console.log("ERROR: categoría no existe");
 			
 
-        // a) Cambiar el icono y título de la pestaña por el del juego actual
-        //document.getElementById("icono").href = category + '/assets/' + gameName + "_icon.png";
-        const nombreBonito = category.charAt(0).toUpperCase() + category.substr(1);
-        document.title = 'Juegos ' + nombreBonito + ' - Kepri Games';
-
-        // c) Añadir los resultados
-        //populatePage(gameName);
+        // a) Cambiar el título de la pestaña por el de la categoría actual
+        document.title = 'Juegos de ' + category + ' - Kepri Games';
         </script>
     </div>
 </body>

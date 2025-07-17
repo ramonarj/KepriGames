@@ -18,17 +18,11 @@
     <h1>Bienvenido a Kepri Games</h1>
     <nav class="categorias vertical">
         <div id="verticalCategoriesNav" class="categories-menu-list bg-darker">
-            <a class="ellipsis rel category-menu-link new-games-icon" href="https://www.minijuegos.com/juegos-diarios" title="Juegos nuevos">
-                <img class="icon" src="https://s3.minijuegosgratis.com/media/icons/navbar/icon-navbar-new-color.svg?v=_1743436611" width="20" height="20">
-                <span>Juegos nuevos</span>
-                <span class="online-presence-badge new-games-mode"></span>
+            <a class="ellipsis rel category-menu-link enlaceCategoria" href="https://kepri-studios.itch.io/" title="Kepri Studios">
+                <img class="icon" src="https://static.itch.io/images/app-icon.svg" width="20" height="20">
+                <span>Kepri <br>Studios</span>
             </a>
-            <a class="ellipsis rel enlaceCategoria " href="https://www.minijuegos.com/multijugador" title="Juegos Multijugador">
-                <img src="https://s3.minijuegosgratis.com/media/icons/categories/svg/navbar/icon-cat-multiplayer.svg?v=_1743436611" width="20" height="20">
-                <span>Multijugador</span>
-                <span class="js-tags-usage online-presence-badge regenerated" data-tag-id="[12]" style="" data-binded="1">
-            </a>
-            <hr class="divider">
+            <span><br><hr></span>
         </div>
     </nav>
     <div id= "contenedorJuegos" class="juegos">
@@ -88,7 +82,7 @@
                     var enlace = document.createElement("a");
                     enlace.innerHTML = 
                     `<a class="ellipsis rel enlaceCategoria" href="search.html" title="Juegos de ${nombreGenero}">
-                        <img src="assets/kepri-logo.png" width="20" height="20">
+                        <img src="categorias/${nombreGenero}-logo.png" width="20" height="20">
                         <span>${nombreBonito}</span>
                         <span class="js-tags-usage online-presence-badge regenerated" data-tag-id="[12]" style="" data-binded="1">
                     </a>`;
