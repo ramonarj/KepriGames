@@ -3,7 +3,7 @@
 <head> 
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="assets/kepri-logo.png">
+    <link rel="icon" type="image/x-icon" href="assets/kepri-logo.svg">
     <title>Kepri Games</title>
     <style type="text/css">
         body {
@@ -13,9 +13,36 @@
 </head>
 <body>
     <a href='/'> 
-        <img src="assets/kepri_banner.png" class="centrado"</img>
+        <img src="assets/kepri-games.svg" class="centrado"</img>
     </a>
-    <h1>Bienvenido a Kepri Games</h1>
+    <!--Saber si el usuario visita desde un móvil o desde PC-->
+    <script>
+        let regexp = /android|iphone|kindle|ipad/i;
+
+        let enMovil = regexp.test(navigator.userAgent);
+
+        if (enMovil) {
+            var foto = document.createElement("img");
+            foto.innerHTML = `
+            <img src="../assets/star.png" width="20" height="20">
+            `
+            //document.querySelectorAll("canvas")[0].appendChild(foto);
+            prompt("Bienvenido desde móvil");
+            console.log("Bienvenido desde móvil");
+        } else {
+            console.log("Bienvenido desde PC");
+        }
+    </script>
+    <!-- Crowdfunding Lánzanos -->
+    <figure>
+         <iframe 
+            style="right:20px; top:20px; position:absolute"
+            src='https://www.lanzanos.com/apoya/5254/1/' width="200" height="266" frameborder='10'> 
+        </iframe>
+        <figcaption>Ayúdanos a seguir</figcaption>
+    </figure>
+
+    <!-- Barra lateral -->
     <nav class="categorias vertical">
         <div id="verticalCategoriesNav" class="categories-menu-list bg-darker">
             <a class="ellipsis rel category-menu-link enlaceCategoria" href="https://kepri-studios.itch.io/" title="Kepri Studios">
@@ -25,6 +52,8 @@
             <span><br><hr></span>
         </div>
     </nav>
+
+    <!--Contenedor con todos los juegos disponibles-->
     <div id= "contenedorJuegos" class="juegos">
         <h2 class="separador">Juegos clásicos para navegador</h2>
         <!--Cargador dinámico de recursos para la página-->
@@ -95,11 +124,14 @@
             }
         </script>
     </div>
+
+    <!-- Contenedor con los juegos por venir -->
     <div id= "contenedorProximos" class="juegos">
         <h2 class="separador">Próximamente</h2>
     </div>
+
     <!---- Prueba API Itch.io ---->
-    <h2 class="separador">O compra desde nuestra página de Itch.io</h2>
+    <h2 class="separador">Nuestros juegos originales</h2>
     <iframe frameborder="0" src="https://itch.io/embed/2953658?linkback=true&amp;border_width=0&amp;bg_color=2c6034&amp;fg_color=ffffff&amp;link_color=e9123b&amp;border_color=702f68" width="206" height="165">
         <a href="https://kepri-studios.itch.io/bye-bye-banner">Bye Bye Banner by Kepri Studios</a>
     </iframe>
@@ -114,9 +146,13 @@
         height="200"
         src="https://www.openstreetmap.org/export/embed.html?bbox=-6.007820963859558%2C37.3884784746256%2C-6.000922322273255%2C37.39120625041843&amp;layer=mapnik&amp;marker=37.38984659979383%2C-6.004371643066406">
     </iframe>
-	<figure>
-        <img src="assets/kepri-logo.png" class="animado"/>
+
+    <!---Logo rodante--->
+    <figure>
+        <img src="assets/kepri-logo.svg" class="animado" width="128" height="128"/>
     </figure>
+
+    <!---Pie de página--->
     <footer>
         <p>Contacto:<br>
             <a href="mailto:kepri.spain@gmail.com">kepri.spain@gmail.com</a>

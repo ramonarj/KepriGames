@@ -10,12 +10,14 @@
 <body style="background-image: url('../assets/fondo.png');">
     <div class="columnaIzq">
         <button class = "button medium-btn" style="width:100%;" onclick="location.href = '../';">Volver</button>
+        <!--Descripción del juego-->
         <div id="descripcion">
-            <p id="parrafo" style="background-image: url('assets/sky.png');">
+            <p id="parrafo" class = "descripcion">
                 Descripción del juego <br>
                 Controles y demás
             </p> 
         </div>
+        <!--Mejores puntuaciones-->
         <div id="scoreBoard">
             <p class="descripcion" style="background-image: url('../assets/scoreboad.png');">
                 Mejores puntuaciones:<br>
@@ -89,19 +91,24 @@
             `
 
             // 3) La tabla de puntuaciones máximas
-            const request3 = new Request(gameName + '/hiscore.json');
-            const response3 = await fetch(request3);
-            const scores = JSON.parse(await response3.text());
             let htmlText = `
                 <p class="descripcion" style="background-image: url('../assets/scoreboad.png');">
                     Mejores puntuaciones:<br>`
-            // Esto habrá una mejor forma de hacerlo
-            for(let i = 0; i < scores[0].length; i++){
-                htmlText += `- `;
-                htmlText += scores[0][i];
-                htmlText += `: `;
-                htmlText += scores[1][i];
-                htmlText += `<br>`;
+            const request3 = new Request(gameName + '/hiscore.json');
+            const response3 = await fetch(request3);
+            if(response3.ok){
+                const scores = JSON.parse(await response3.text());
+                // Esto habrá una mejor forma de hacerlo
+                for(let i = 0; i < scores[0].length; i++){
+                    htmlText += `- `;
+                    htmlText += scores[0][i];
+                    htmlText += `: `;
+                    htmlText += scores[1][i];
+                    htmlText += `<br>`;
+                }
+            }
+            else{
+                htmlText += '-- Aún no hay datos --';
             }
             htmlText += `</p>`;
             document.getElementById("scoreBoard").innerHTML = htmlText;

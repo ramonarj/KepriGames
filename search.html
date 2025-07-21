@@ -3,7 +3,7 @@
 <head> 
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/x-icon" href="assets/kepri-logo.png">
+    <link rel="icon" type="image/x-icon" href="assets/kepri-logo.svg">
     <title>Kepri Games</title>
     <style type="text/css">
         body {
@@ -13,10 +13,15 @@
 </head>
 <body>
     <a href='/'> 
-        <img src="assets/kepri_banner.png" class="centrado"</img>
+        <img src="assets/kepri-games.svg" class="centrado"</img>
     </a>
     <nav class="categorias vertical">
         <div id="verticalCategoriesNav" class="categories-menu-list bg-darker">
+            <a class="ellipsis rel category-menu-link enlaceCategoria" href="https://kepri-studios.itch.io/" title="Kepri Studios">
+                <img class="icon" src="https://static.itch.io/images/app-icon.svg" width="20" height="20">
+                <span>Kepri <br>Studios</span>
+            </a>
+            <span><br><hr></span>
         </div>
     </nav>
     <div id= "contenedorJuegos" class="juegos">
@@ -44,7 +49,7 @@
                     enlace.innerHTML = 
                     `<a class="ellipsis rel enlaceCategoria" href="search.html" title="Juegos de ${nombreGenero}">
                         <img src="categorias/${nombreGenero}-logo.png" width="20" height="20">
-                        <span>${nombreBonito}</span>
+                        <span id="texto_${nombreGenero}">${nombreBonito}</span>
                         <span class="js-tags-usage online-presence-badge regenerated" data-tag-id="[12]" style="" data-binded="1">
                     </a>`;
                     // Callbacks para el enlace
@@ -53,6 +58,9 @@
                     //enlace.onmouseout = function() { document.getElementById(nombreJuego + "-thumb").src = `${rutaIconos}-thumb.png`; };
                     document.getElementById(containerId).appendChild(enlace);
                 }
+                console.log(window.category);
+                let catActual = document.getElementById('texto_' + window.category);
+                catActual.style = "color:#ed4f16";
             }
 
             // Crear los enlaces de los juegos correspondientes a la categoría dada
@@ -68,7 +76,6 @@
                 // Por cada nombre del JSON, creamos un enlace con su nombre y miniatura correspondiente, 
                 // y lo hacemos hijo del contenedor dado.
                 for(let i = 0; i < listaNombres.length; i++){
-                    console.log(listaNombres[i].name);
                     const nombreBonito = listaNombres[i].charAt(0).toUpperCase() + listaNombres[i].substr(1);
 					const nombreJuego = listaNombres[i];
                     const rutaIconos = `juegos/${listaNombres[i]}/assets/${listaNombres[i]}`;
@@ -107,6 +114,7 @@
 
         // a) Cambiar el título de la pestaña por el de la categoría actual
         document.title = 'Juegos de ' + category + ' - Kepri Games';
+        window.category = category;
         </script>
     </div>
 </body>
