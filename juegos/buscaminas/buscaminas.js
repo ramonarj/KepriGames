@@ -2,10 +2,12 @@
 const FILS = 10;
 const COLS = 10;
 const NUM_MINAS = 10;
-const TAM_CASILLA = 32;
+let TAM_CASILLA = 64;
+const TAM_SPRITES = 32;
 const TOP_PLAYERS = 5;
 
 //import { muteGame } from '../utils.js';
+import { desdeMovil } from '../utils.js';
 
 
 export function muteGame(){
@@ -27,7 +29,8 @@ var config = {
         preload: preload,
         create: create,
         update: update
-    }
+    },
+    antialias: false
 };
 
 var numberColors = [0x0000ff, 0x00a000, 0xff0000, 0x000060, 0x800000, 0xff008b8b, 0xa000a0, 0x404040];
@@ -66,7 +69,8 @@ function create ()
     tab = CreaTablero(FILS, COLS, NUM_MINAS);
     for(let i = 0; i < FILS; i ++){
         for(let j = 0; j < COLS; j++){
-            tab.cas[i][j].fondo = this.add.image(j * TAM_CASILLA + TAM_CASILLA / 2, i * TAM_CASILLA + TAM_CASILLA / 2,'casilla');
+            tab.cas[i][j].fondo = this.add.image(j * TAM_CASILLA + TAM_CASILLA / 2, 
+                i * TAM_CASILLA + TAM_CASILLA / 2, 'casilla').setDisplaySize(TAM_CASILLA, TAM_CASILLA);
             if(tab.cas[i][j].mina){
                 s+="X";
                 //this.add.image(j * TAM_CASILLA + TAM_CASILLA / 2, i * TAM_CASILLA + TAM_CASILLA / 2,'bandera');
@@ -140,7 +144,7 @@ function Par(x, y)
 
 function Numero(fil, col, valor){
     let num = game.scene.scenes[0].add.text(col * TAM_CASILLA + TAM_CASILLA / 2, fil * TAM_CASILLA + TAM_CASILLA / 2, 
-    valor, { fontSize: '28px' }).setOrigin(0.5, 0.5);
+    valor, { fontSize: '28px' }).setOrigin(0.5, 0.5).setScale(TAM_CASILLA / TAM_SPRITES);
     num.setTint(numberColors[valor - 1]);
 
     return num;
@@ -156,7 +160,7 @@ function getRandomInt(min, max) {
 function hundeCasilla(t, fil, col){
     t.cas[fil][col].fondo.destroy();
     t.cas[fil][col].fondo = game.scene.scenes[0].add.image(col * TAM_CASILLA + TAM_CASILLA / 2, 
-        fil * TAM_CASILLA + TAM_CASILLA / 2,'hundida');
+        fil * TAM_CASILLA + TAM_CASILLA / 2,'hundida').setDisplaySize(TAM_CASILLA, TAM_CASILLA);
 }
 
 //2.CREA TABLERO//
@@ -299,7 +303,8 @@ function explotaBomba(){
     hundeCasilla(tab, tab.posY, tab.posX);
     tab.cas[tab.posY][tab.posX].fondo.setTint(0xff0000);
     // Sprite bomba
-    game.scene.scenes[0].add.image(tab.posX * TAM_CASILLA + TAM_CASILLA / 2, tab.posY * TAM_CASILLA + TAM_CASILLA / 2,'bomba');
+    game.scene.scenes[0].add.image(tab.posX * TAM_CASILLA + TAM_CASILLA / 2, 
+        tab.posY * TAM_CASILLA + TAM_CASILLA / 2,'bomba').setDisplaySize(TAM_CASILLA, TAM_CASILLA);
     sonidos.get('bomba').play();
 }
 
@@ -350,7 +355,7 @@ function mouseDown(pointer){
         if (tab.cas[tab.posY][tab.posX].estado == 'o'){
             tab.cas[tab.posY][tab.posX].estado = 'x';
             tab.cas[tab.posY][tab.posX].bandera = game.scene.scenes[0].add.image(tab.posX * TAM_CASILLA + TAM_CASILLA / 2, 
-                tab.posY * TAM_CASILLA + TAM_CASILLA / 2,'bandera');
+                tab.posY * TAM_CASILLA + TAM_CASILLA / 2,'bandera').setDisplaySize(TAM_CASILLA, TAM_CASILLA);
             sonidos.get('bandera').play();
         }
         // quitar

@@ -79,3 +79,11 @@ export function loadFile(path){
         result = xmlhttp.responseText;
     return result;
 }
+
+export function desdeMovil()
+{
+    let regexp = /android|iphone|kindle|ipad/i;
+    let movil = regexp.test(navigator.userAgent);
+
+    return movil;
+}
