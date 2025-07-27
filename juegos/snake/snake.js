@@ -2,7 +2,7 @@
 // Dedicado a Inmaculada Quiñones Morata
 // TODO:
 // 1) Usar algoritmo del buscaminas para que no pueda aparecer fruta en casillas ocupadas por la serpiente
-import { ActualizaTop, mayorQue } from '../utils.js';
+import { ActualizaTop, mayorQue, desdeMovil } from '../utils.js';
 
 const TAM_CASILLA = 50;
 const FILAS = 10;
@@ -11,6 +11,8 @@ const LONGITUD_INICIAL = 2;
 const DEBUG_INFO = true;
 const SCORE_FONT = 18;
 const TOP_PLAYERS = 3;
+const GAME_LAYER = 1;
+const CANVAS_LAYER = 2;
 
 var config = {
     type: Phaser.AUTO,
@@ -23,10 +25,12 @@ var config = {
     }
 };
 
+// Input
+var cursors;
+var cruceta;
 // Control
 var tiempo = 0;
 var frameTime = 0.3 * 1000;
-var cursors;
 var gameOver = false;
 var score = 0;
 // Canvas
@@ -50,6 +54,160 @@ function Casilla(x, y){
     this.y = y;
 }
 
+function preload ()
+{
+    for(let i = 0; i < sprites.length; i++)
+        this.load.image(sprites[i], 'snake/assets/' + sprites[i] + '.png');
+
+    // Cruceta
+    this.load.image('cruceta', '_shared/images/cruceta.png');
+    this.load.image('cruceta_izquierda', '_shared/images/cruceta_izquierda.png');
+    this.load.image('cruceta_derecha', '_shared/images/cruceta_derecha.png');
+    this.load.image('cruceta_arriba', '_shared/images/cruceta_arriba.png');
+    this.load.image('cruceta_abajo', '_shared/images/cruceta_abajo.png');
+
+    this.load.audio('comer', ['snake/assets/comer.wav']); // se pueden indicar varias fuentes alternativas
+    this.load.audio('gameover', 'snake/assets/gameover.wav');
+
+    this.load.bitmapFont('whiteFont', '_shared/fonts/white.png', '_shared/fonts/white.fnt');
+}
+
+function create ()
+{
+    gScene = this;
+    let localHi = 0;
+    if(document.cookie){
+        localHi = document.cookie.split('=')[1];
+        console.log(localHi);
+    }
+    // Tablero lógico
+    for(let i = 0; i < FILAS; i++) {
+        tablero[i] = new Array(COLUMNAS);
+        for(let j = 0; j < COLUMNAS; j++) {
+            tablero[i][j] = false;
+        }
+    }
+
+    //  Fondo
+    this.add.image(game.config.width/2, game.config.height/2, 'cuerpo').setScale(COLUMNAS + 1, FILAS + 1).setTint(0x6080b0);
+    
+    // - - - - Serpiente - - - - //
+    serpiente = new Serpiente(this);
+
+    // - - - -  Frutas - - - - //
+    fruta = this.add.image(TAM_CASILLA * 2 + TAM_CASILLA / 2,TAM_CASILLA * 5 + TAM_CASILLA / 2, 'fruta');
+    fruta.casilla = {x: 2, y:5};
+
+    //  Input Events
+    cursors = this.input.keyboard.createCursorKeys();
+
+    // HUD
+    scoreText = this.add.bitmapText(16, 16, 'whiteFont',`Score: 0`, 15);
+    scoreText.setDepth(CANVAS_LAYER);
+    localHiText = this.add.bitmapText(game.config.width - 140, 16, 'whiteFont',`Best: ${localHi}`, 15);
+    localHiText.setDepth(CANVAS_LAYER);
+
+    if(DEBUG_INFO){
+        fpsText = this.add.text(10, game.config.height - 32, 'FPS', 
+            { fontSize: SCORE_FONT + 'px', fill: '#fff' });
+        fpsText.setDepth(CANVAS_LAYER);
+    }
+
+    // Cruceta superpuesta si estamos en móvil
+    if(!desdeMovil())
+    {
+        /*
+        cruceta = this.add.sprite(game.config.width - (96 * 1.5) / 2, game.config.height - (96 * 1.5) / 2, 'cruceta')
+            .setScale(1.5, 1.5).setInteractive();
+        cruceta.alpha = 0.6;
+        cruceta.setDepth(CANVAS_LAYER);
+
+        cruceta.on("pointerdown", crucetaPulsada);
+        */
+        
+
+        let centro = new Casilla(game.config.width - (96 * 1.5) / 2, game.config.height - (96 * 1.5) / 2);
+        let desp = (96 * 1.25) / 3;
+
+        // Direcciones
+        let crucetaArriba = this.add.sprite(centro.x, centro.y - desp, 'cruceta_arriba')
+            .setScale(1.5, 1.5).setInteractive();
+        crucetaArriba.alpha = 0.6;
+        crucetaArriba.setDepth(CANVAS_LAYER);
+
+        crucetaArriba.on("pointerdown", crucetaArribaCB);
+
+        let crucetaAbajo = this.add.sprite(centro.x, centro.y + desp, 'cruceta_abajo')
+            .setScale(1.5, 1.5).setInteractive();
+        crucetaAbajo.alpha = 0.6;
+        crucetaAbajo.setDepth(CANVAS_LAYER);
+
+        crucetaAbajo.on("pointerdown", crucetaAbajoCB);
+
+        let crucetaDerecha = this.add.sprite(centro.x + desp, centro.y, 'cruceta_derecha')
+            .setScale(1.5, 1.5).setInteractive();
+        crucetaDerecha.alpha = 0.6;
+        crucetaDerecha.setDepth(CANVAS_LAYER);
+
+        crucetaDerecha.on("pointerdown", crucetaDerechaCB);
+
+        let crucetaIzquierda = this.add.sprite(centro.x - desp, centro.y, 'cruceta_izquierda')
+            .setScale(1.5, 1.5).setInteractive();
+        crucetaIzquierda.alpha = 0.6;
+        crucetaIzquierda.setDepth(CANVAS_LAYER);
+
+        crucetaIzquierda.on("pointerdown", crucetaIzquierdaCB);
+    }
+    // Para poder
+    this.time.advancedTiming = true;
+
+    // - - - Sonido - - - //
+    comerSound = this.sound.add('comer');
+    gameoverSound = this.sound.add('gameover');
+
+    // - - - - Callbacks para el ratón - - - - //
+    this.input.on("pointerdown", mouseDown);
+    this.input.on("pointerup", mouseUp);
+}
+
+function update (time, delta)
+{
+    if (gameOver) { return; }
+
+    // FPS (Nota: está función destroza el rendimiento)
+    if(DEBUG_INFO)
+        fpsText.setText('FPS: ' + game.loop.actualFps);
+
+    // Movimiento en 4 direcciones
+    readInput();
+
+    // Mover la serpiente
+    if(tiempo > frameTime)
+    {
+        tiempo -= frameTime;
+        serpiente.updateDir();
+        serpiente.mueve();
+    }
+    tiempo+=delta;
+}
+
+function readInput(){
+    if (cursors.down.isDown) {
+        serpiente.setDir(0, 1);
+    }
+    else if (cursors.up.isDown) {
+        serpiente.setDir(0, -1);
+    }
+    else if (cursors.right.isDown){
+        serpiente.setDir(1, 0);
+    }
+    else if (cursors.left.isDown) {
+        serpiente.setDir(-1, 0);
+    }
+}
+
+// -----------------------------Serpiente -----------------------------//
+
 function Serpiente(scene)
 {
     /* Constructora */
@@ -66,6 +224,9 @@ function Serpiente(scene)
     // Funciones //
     this.setDir = function(dirX, dirY)
     {
+        // No se permite girar 180º
+        if(this.dir.y * dirY === -1 || this.dir.x * dirX === -1) { return; }
+
         this.nextDir.x = dirX;
         this.nextDir.y = dirY;
     }
@@ -168,110 +329,9 @@ function creaAnillo(cas, scene){
     var anillo = scene.add.image(TAM_CASILLA * cas.x + TAM_CASILLA / 2,
         TAM_CASILLA * cas.y + TAM_CASILLA / 2, 'cuerpo');
     anillo.casilla = cas;
+    anillo.setDepth(GAME_LAYER);
 
     return anillo;
-}
-
-function preload ()
-{
-    for(let i = 0; i < sprites.length; i++)
-        this.load.image(sprites[i], 'snake/assets/' + sprites[i] + '.png');
-
-    this.load.audio('comer', ['snake/assets/comer.wav']); // se pueden indicar varias fuentes alternativas
-    this.load.audio('gameover', 'snake/assets/gameover.wav');
-
-    this.load.bitmapFont('whiteFont', '_shared/fonts/white.png', '_shared/fonts/white.fnt');
-}
-
-function create ()
-{
-    gScene = this;
-    let localHi = 0;
-    if(document.cookie){
-        localHi = document.cookie.split('=')[1];
-        console.log(localHi);
-    }
-    // Tablero lógico
-    for(let i = 0; i < FILAS; i++) {
-        tablero[i] = new Array(COLUMNAS);
-        for(let j = 0; j < COLUMNAS; j++) {
-            tablero[i][j] = false;
-        }
-    }
-
-    //  Fondo
-    this.add.image(game.config.width/2, game.config.height/2, 'cuerpo').setScale(COLUMNAS + 1, FILAS + 1).setTint(0x6080b0);
-    
-    // - - - - Serpiente - - - - //
-    serpiente = new Serpiente(this);
-
-    // - - - -  Frutas - - - - //
-    fruta = this.add.image(TAM_CASILLA * 2 + TAM_CASILLA / 2,TAM_CASILLA * 5 + TAM_CASILLA / 2, 'fruta');
-    fruta.casilla = {x: 2, y:5};
-
-    //  Input Events
-    cursors = this.input.keyboard.createCursorKeys();
-
-    // HUD
-    scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: SCORE_FONT + 'px', fill: '#fff' });
-    //localHiText = this.add.text(game.config.width - 120, 16, `Best: ${localHi}`, { fontSize: SCORE_FONT + 'px', fill: '#fff' });
-    localHiText = this.add.bitmapText(game.config.width - 140, 16, 'whiteFont',`Best: ${localHi}`, 15);
-
-    if(DEBUG_INFO)
-        fpsText = this.add.text(game.config.width - 144, game.config.height - 32, 'FPS', 
-            { fontSize: SCORE_FONT + 'px', fill: '#fff' });
-
-    // Para poder
-    this.time.advancedTiming = true;
-
-    // - - - Sonido - - - //
-    comerSound = this.sound.add('comer');
-    gameoverSound = this.sound.add('gameover');
-
-    // - - - - Callbacks para el ratón - - - - //
-    this.input.on("pointerdown", mouseDown);
-    this.input.on("pointerup", mouseUp);
-}
-
-function update (time, delta)
-{
-    if (gameOver) { return; }
-
-    // FPS (Nota: está función destroza el rendimiento)
-    if(DEBUG_INFO)
-        fpsText.setText('FPS: ' + game.loop.actualFps);
-
-    // Movimiento en 4 direcciones
-    readInput();
-
-    // Mover la serpiente
-    if(tiempo > frameTime)
-    {
-        tiempo -= frameTime;
-        serpiente.updateDir();
-        serpiente.mueve();
-        console.log("Mueve");
-    }
-    tiempo+=delta;
-}
-
-function readInput(){
-    if (cursors.down.isDown) {
-        if(serpiente.dir.y != -1)
-            serpiente.setDir(0, 1);
-    }
-    else if (cursors.up.isDown) {
-        if(serpiente.dir.y != 1)
-            serpiente.setDir(0, -1);
-    }
-    else if (cursors.right.isDown){
-        if(serpiente.dir.x != -1)
-            serpiente.setDir(1, 0);
-    }
-    else if (cursors.left.isDown) {
-        if(serpiente.dir.x != 1)
-            serpiente.setDir(-1, 0);
-    }
 }
 
 
@@ -330,6 +390,35 @@ async function getHighscore(){
 
 
 //--------------------Callbacks------------------//
+
+function crucetaPulsada(pointer){
+        // Botón izquierdo
+    if(pointer.leftButtonDown()){
+        console.log("Pulsada");
+    }
+    if(pointer.downX > cruceta.x){
+        serpiente.setDir(1, 0);
+    }
+    else
+        serpiente.setDir(-1, 0);
+    console.log(pointer);
+}
+
+function crucetaArribaCB(pointer){
+    serpiente.setDir(0, -1);
+}
+
+function crucetaAbajoCB(pointer){
+    serpiente.setDir(0, 1);
+}
+
+function crucetaIzquierdaCB(pointer){
+    serpiente.setDir(-1, 0);
+}
+
+function crucetaDerechaCB(pointer){
+    serpiente.setDir(1, 0);
+}
 
 function mouseDown(pointer){
     // Botón izquierdo
