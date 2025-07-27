@@ -1,8 +1,13 @@
-// Ramón Arjona Quiñones, 2024-2025
+// Kepri Studios, 2024-2025
+// Dedicado a Inmaculada Quiñones Morata
+// TODO:
+// 1) Usar algoritmo del buscaminas para que no pueda aparecer fruta en casillas ocupadas por la serpiente
+import { ActualizaTop, mayorQue } from '../utils.js';
+
 const TAM_CASILLA = 50;
 const FILAS = 10;
 const COLUMNAS = 12;
-const LONGITUD_INICIAL = 3;
+const LONGITUD_INICIAL = 2;
 const DEBUG_INFO = true;
 const SCORE_FONT = 18;
 const TOP_PLAYERS = 3;
@@ -15,24 +20,26 @@ var config = {
         preload: preload,
         create: create,
         update: update
-    }  
+    }
 };
 
+// Control
 var tiempo = 0;
 var frameTime = 0.3 * 1000;
 var cursors;
 var gameOver = false;
 var score = 0;
+// Canvas
 var scoreText, localHiText;
 var fpsText;
+// Entidades del juego
 var fruta;
 var tablero = []; // cada celda es true (hay serpiente) o false (no la hay)
-var serpiente = [];
-var cabeza, cola;
-var selectSound;
+var serpiente;
+// Sonidos
 var comerSound;
 var gameoverSound;
-var debeCrecer;
+var gScene;
 
 var game = new Phaser.Game(config);
 
@@ -43,17 +50,125 @@ function Casilla(x, y){
     this.y = y;
 }
 
-// Estructuras
-function creaAnillo(cas, dir, next, tipo, scene){
-    var anillo = scene.add.image(TAM_CASILLA * cas.x + TAM_CASILLA / 2,
-        TAM_CASILLA * cas.y + TAM_CASILLA / 2, tipo);
-    anillo.casilla = cas;
-    anillo.dir = dir;
-    anillo.next = next;
-    anillo.comida = false;
+function Serpiente(scene)
+{
+    /* Constructora */
+    this.cuerpo = [];
+    for(let i = 0; i < LONGITUD_INICIAL; i++){
+        this.cuerpo.push(creaAnillo({ x: 6 - i, y: 5}, scene));
+    }
+    this.cabeza = this.cuerpo[0];
+    this.cola = this.cuerpo[LONGITUD_INICIAL - 1];
 
-    // Funciones
-    anillo.setDir = function(dirX, dirY) { this.dir.x = dirX; this.dir.y = dirY; };
+    this.dir = new Casilla(1, 0);
+    this.nextDir = new Casilla(0, 0);
+    this.debeCrecer = false;
+    // Funciones //
+    this.setDir = function(dirX, dirY)
+    {
+        this.nextDir.x = dirX;
+        this.nextDir.y = dirY;
+    }
+
+    this.updateDir = function()
+    {
+        if(this.nextDir.x === 0 && this.nextDir.y === 0) { return; }
+
+        this.dir.x = this.nextDir.x;
+        this.dir.y = this.nextDir.y;
+        this.nextDir.x = this.nextDir.y = 0;
+    }
+
+    /* Mueve un paso la serpiente, teniendo en cuenta la dirección que lleva la cabeza */
+    this.mueve = function()
+    {
+        var newCas = siguiente(this.cabeza.casilla, this.dir);
+
+        // a) Chocarse consigo mismo (con los bordes no; es un toroide)
+        if(tablero[newCas.y][newCas.x])
+        {
+            endGame();
+            return;
+        }
+
+        // b) Actualizar el tablero (solo en la cabeza y cola)
+        tablero[newCas.y][newCas.x] = true;
+        tablero[this.cola.casilla.y][this.cola.casilla.x] = false;
+
+        //
+        if(!this.debeCrecer){
+            let sigCas = this.cuerpo[this.cuerpo.length - 2].casilla;
+            this.mueveAnillo(this.cola, sigCas.y, sigCas.x);
+        } else {this.debeCrecer = false;}
+
+        // c) Mover cada anillo del cuerpo empezando por atrás
+        for(let i = this.cuerpo.length - 2; i > 0; i--)
+        {
+            let sigCas = this.cuerpo[i - 1].casilla;
+            this.mueveAnillo(this.cuerpo[i], sigCas.y, sigCas.x);
+        }   
+
+        // d) Mover la cabeza lógica y físicamente en la dirección que lleve
+        this.mueveAnillo(this.cabeza, newCas.y, newCas.x);
+
+        // e) Ver si tenía pendiente crecer
+        /*
+        if(this.debeCrecer)
+        {
+            this.crece();
+            this.debeCrecer = false;
+        }*/
+
+        // e) Ver si ha comido una fruta
+        if (fruta.casilla.x === newCas.x && fruta.casilla.y === newCas.y)
+        {
+            serpiente.comeFruta();
+            scoreText.setText('Score: ' + score);
+        }
+    }
+
+    /* Mueve el anillo a la posición del tablero dada */
+    this.mueveAnillo = function(anillo, fil, col)
+    {
+        // Lógica
+        anillo.casilla.x = col;
+        anillo.casilla.y = fil;
+        // Física
+        anillo.x = TAM_CASILLA * col + TAM_CASILLA / 2;
+        anillo.y = TAM_CASILLA * fil + TAM_CASILLA / 2;
+    }
+
+    /* Se come la fruta, aumentando la puntuación */
+    this.comeFruta = function(){
+        // Colocarla aleatoriamente
+        let fil = Math.floor(Math.random() * FILAS);
+        let col = Math.floor(Math.random() * COLUMNAS);
+        fruta.setPosition(col * TAM_CASILLA + TAM_CASILLA / 2, fil * TAM_CASILLA + TAM_CASILLA / 2);
+        fruta.casilla.x = col;
+        fruta.casilla.y = fil;
+
+        // Crecer
+        this.crece();
+
+        // Sonido
+        score++;
+        comerSound.play();
+    }
+
+    this.crece = function()
+    {
+        this.cuerpo.push(creaAnillo({ x: this.cola.casilla.x, y: this.cola.casilla.y}, gScene));
+        this.cola = this.cuerpo[this.cuerpo.length - 1];
+    }
+}
+
+
+// Estructuras
+function creaAnillo(cas, scene){
+    var anillo = scene.add.image(TAM_CASILLA * cas.x + TAM_CASILLA / 2,
+        TAM_CASILLA * cas.y + TAM_CASILLA / 2, 'cuerpo');
+    anillo.casilla = cas;
+
     return anillo;
 }
 
@@ -70,6 +185,7 @@ function preload ()
 
 function create ()
 {
+    gScene = this;
     let localHi = 0;
     if(document.cookie){
         localHi = document.cookie.split('=')[1];
@@ -84,27 +200,10 @@ function create ()
     }
 
     //  Fondo
-    this.add.image(game.config.width/2, game.config.height/2, 'cuerpo').setScale(COLUMNAS, FILAS).setTint(0x6080b0);
-
+    this.add.image(game.config.width/2, game.config.height/2, 'cuerpo').setScale(COLUMNAS + 1, FILAS + 1).setTint(0x6080b0);
     
     // - - - - Serpiente - - - - //
-    // Cabeza
-    serpiente.push(creaAnillo(new Casilla(COLUMNAS / 2, FILAS / 2), { x:1, y:0}, null, 'cabeza', this));
-    cabeza = serpiente[0];
-    cabeza.mueve = mueve;
-    // Cuerpo
-    for(let i = 0; i < LONGITUD_INICIAL - 2; i++){
-        serpiente.push(creaAnillo({ x: serpiente[i].casilla.x - 1, y: serpiente[0].casilla.y}, { x:1, y:0}, null, 'cuerpo', this));
-    }
-    // Cola
-    serpiente.push(creaAnillo({ x: serpiente[LONGITUD_INICIAL - 2].casilla.x - 1, y: serpiente[LONGITUD_INICIAL - 2].casilla.y  }, 
-        { x:1, y:0}, null, 'cola', this));
-    cola = serpiente[LONGITUD_INICIAL - 1];
-    cola.next = null;
-
-    for(let i = 0; i < LONGITUD_INICIAL - 1; i++){
-        serpiente[i].next = serpiente[i + 1];
-    }
+    serpiente = new Serpiente(this);
 
     // - - - -  Frutas - - - - //
     fruta = this.add.image(TAM_CASILLA * 2 + TAM_CASILLA / 2,TAM_CASILLA * 5 + TAM_CASILLA / 2, 'fruta');
@@ -143,26 +242,36 @@ function update (time, delta)
         fpsText.setText('FPS: ' + game.loop.actualFps);
 
     // Movimiento en 4 direcciones
-    if (cursors.down.isDown) {
-        cabeza.setDir(0, 1);
-    }
-    else if (cursors.up.isDown) {
-        cabeza.setDir(0, -1);
-    }
-    else if (cursors.right.isDown){
-        cabeza.setDir(1, 0);
-    }
-    else if (cursors.left.isDown) {
-        cabeza.setDir(-1, 0);
-    }
+    readInput();
 
     // Mover la serpiente
     if(tiempo > frameTime)
     {
         tiempo -= frameTime;
-        mueveSerpiente();
+        serpiente.updateDir();
+        serpiente.mueve();
+        console.log("Mueve");
     }
     tiempo+=delta;
+}
+
+function readInput(){
+    if (cursors.down.isDown) {
+        if(serpiente.dir.y != -1)
+            serpiente.setDir(0, 1);
+    }
+    else if (cursors.up.isDown) {
+        if(serpiente.dir.y != 1)
+            serpiente.setDir(0, -1);
+    }
+    else if (cursors.right.isDown){
+        if(serpiente.dir.x != -1)
+            serpiente.setDir(1, 0);
+    }
+    else if (cursors.left.isDown) {
+        if(serpiente.dir.x != 1)
+            serpiente.setDir(-1, 0);
+    }
 }
 
 
@@ -180,119 +289,10 @@ function siguiente(pos, dir){
     return newPos;
 }
 
-
-function mueveSerpiente(){
-    var newCas = siguiente(cabeza.casilla, cabeza.dir);
-
-    // a) Chocarse consigo mismo (con los bordes no; es un toroide)
-    if(tablero[newCas.y][newCas.x])
-    {
-        endGame();
-        return;
-    }
-
-    // Mover la serpiente
-    mueve(cabeza, cabeza.dir);
-
-    // Ver si ha comido una fruta
-    if (fruta.casilla.x === newCas.x && fruta.casilla.y === newCas.y)
-    {
-        eatFruit();
-        scoreText.setText('Score: ' + score);
-    }
-}
-
+/* No se usa porque es un toroide */
 function dentroLimites(cas){
     return (cas.x >= 0 && cas.x < COLUMNAS && cas.y >= 0 && cas.y < FILAS);
 }
-
-// Mueve un eslabón de la serpiente
-function mueve(anillo, newDir) {
-
-    // 1) Avanza en la dirección que ya traía lógicamente...
-    tablero[anillo.casilla.y][anillo.casilla.x] = false;
-    anillo.casilla = siguiente(anillo.casilla, anillo.dir);
-    tablero[anillo.casilla.y][anillo.casilla.x] = true;
-
-    // ...y físicamente
-    anillo.x = TAM_CASILLA * anillo.casilla.x + TAM_CASILLA / 2;
-    anillo.y = TAM_CASILLA * anillo.casilla.y + TAM_CASILLA / 2;
-
-    // 2) Llama recursivamente a que se mueva el siguiente eslabón
-    if(anillo.next != null){
-        mueve(anillo.next, anillo.dir)
-    }
-
-    // 3) Actualiza su dirección según la del eslabón anterior
-    anillo.dir.x = newDir.x;
-    anillo.dir.y = newDir.y;
-    updateAngle(anillo);
-
-    // 4) Hacer avanzar la comida
-    if(anillo.comida)
-    {
-        // Crecer
-        if(anillo === cola){
-            console.log("Digerido");
-            grow();
-        }
-        // Pasar la comida al siguiente
-        else{
-            anillo.next.comida = true;
-            anillo.next.setTint(0x0000c0);
-        }
-        anillo.comida = false;
-    }
-    anillo.setTint(0xffffff);
-}
-
-function updateAngle(anillo){
-    if(anillo.dir.x == 1)
-        anillo.angle = 0;
-    else if(anillo.dir.x == -1)
-        anillo.angle = 180;
-    else if(anillo.dir.y == 1)
-        anillo.angle = 90;
-    else
-        anillo.angle = -90;
-}
-
-function eatFruit(){
-    // Colocarla aleatoriamente
-    let fil = Math.floor(Math.random() * FILAS);
-    let col = Math.floor(Math.random() * COLUMNAS);
-    fruta.setPosition(col * TAM_CASILLA + TAM_CASILLA / 2, fil * TAM_CASILLA + TAM_CASILLA / 2);
-    fruta.casilla.x = col;
-    fruta.casilla.y = fil;
-
-    // Hacer crecer a la serpiente en el siguiente movimiento
-    debeCrecer = true;
-    cabeza.comida = true;
-    cabeza.setTint(0x0000ff);
-
-    // Sonido
-    score++;
-    comerSound.play();
-}
-
-function grow(){
-    let nuevo = creaAnillo(new Casilla(cola.casilla.x, cola.casilla.y), {x: cola.dir.x, y: cola.dir.y}, cola, 'cuerpo', game.scene.scenes[0]);
-    serpiente[serpiente.length - 1] = nuevo;
-    serpiente[serpiente.length - 2].next = nuevo;
-    //serpiente.push(cola);
-    cola.setPosition(cola.x - cola.dir.x * TAM_CASILLA, cola.y - cola.dir.y * TAM_CASILLA);
-    /*
-    // Mandar la cola al final
-    serpiente.push(cola);
-    cola.setPosition(cola.x - cola.dir.x * TAM_CASILLA, cola.y - cola.dir.y * TAM_CASILLA);
-    // Usar el hueco para un nuevo anillo
-    serpiente[serpiente.length - 2] = nuevo;
-    serpiente[serpiente.length - 3].next = nuevo;
-    debeCrecer = false;
-    */
-}
-
-import { ActualizaTop, mayorQue } from '../utils.js';
 
 function endGame(){
     gameOver = true;

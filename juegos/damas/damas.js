@@ -1,3 +1,8 @@
+/* Kepri Games, 2025
+ * Dedicado a Antonio Arjona Molinero
+ */
+import { createSoundMap } from "../utils.js";
+
 var config = {
     type: Phaser.AUTO,
     width: 640,
@@ -11,7 +16,6 @@ var config = {
 
 const TAM_CASILLA = 80;
 var gameOver = false;
-var fpsText;
 var tablero = [];
 var piezas = [];
 var selected = null;
@@ -63,20 +67,8 @@ function create ()
     // Equipo blanco
     creaEquipo(tablero, false, true, this);
 
-    //  Medidor FPS
-    fpsText = this.add.text(450, 16, 'FPS', { fontSize: '32px', fill: '#000' });
-    this.time.advancedTiming = true;
-
     // - - - Sonidos - - - //
-    sonidos = new Map();
-    for(let i = 0; i < nombresSonidos.length; i++){
-        let s = this.sound.add(nombresSonidos[i]);
-        sonidos.set(nombresSonidos[i], s);
-    }
-    for(let i = 0; i < sharedSonidos.length; i++){
-        let s = this.sound.add(sharedSonidos[i]);
-        sonidos.set(sharedSonidos[i], s);
-    }
+    sonidos = createSoundMap(nombresSonidos, sharedSonidos, this);
 
     // - - - - Callbacks para el ratón - - - - //
     this.input.on("pointerdown", mouseDown);
@@ -91,9 +83,6 @@ function update ()
     if (gameOver) {
         return;
     }
-
-    // FPS (Nota: está función destroza el rendimiento)
-    fpsText.setText('FPS: ' + game.loop.actualFps);
 }
 
 //----------------------------------------|| Creación ||------------------------------------------//
@@ -154,14 +143,17 @@ function dentroLimites(fil, col){
     return (fil >= 0 && fil < 8 && col >= 0 && col < 8);
 }
 
-/* Devuelve true si el movimiento es 'reglamentario', i.e., sigue las normas del ajedrez en función del tipo de pieza */
-function movimientoReglamentario(pieza, newFila, newColumna)
+/* Devuelve true si el movimiento es 'legal', i.e., sigue las normas de las damas en función del tipo de pieza */
+function movimientoLegal(pieza, newFila, newColumna)
 {
      // Fuera del mapa no es legal //
     if(!dentroLimites(newFila, newColumna)) { return false; }
 
     // Quedarse en la misma casilla tampoco //
     if(pieza.fila === newFila && pieza.columna === newColumna) {return false; }
+
+    // En las damas se salta, no se come en el sitio //
+    if(tablero[newFila][newColumna] !== null) {return false; }
 
     let casDestino = tablero[newFila][newColumna];
 
@@ -174,14 +166,14 @@ function movimientoReglamentario(pieza, newFila, newColumna)
         {
             let difColumna = Math.abs(pieza.columna - newColumna);
             // Mover normal
-            if(difColumna === 1 && casDestino === null)
+            if(difColumna === 1)
             {
                 if((pieza.negro && destino.fila - pieza.fila === 1) ||  //peón negro
                 (!pieza.negro && destino.fila - pieza.fila === -1)) //peón blanco
                     legal = true;
             }
             // Comer
-            else if (difColumna === 2 && casDestino === null)
+            else if (difColumna === 2)
             {
                 if((pieza.negro && destino.fila - pieza.fila === 2) ||  //peón negro
                 (!pieza.negro && destino.fila - pieza.fila === -2)) //peón blanco
@@ -201,37 +193,24 @@ function movimientoReglamentario(pieza, newFila, newColumna)
         }
         case 'dama':
         {
-            // Movimiento diagonal y que no tenga piezas en medio
-            if(movimientoDiagonal(pieza.columna, pieza.fila, newColumna, destino.fila)){ // && caminoLibre(origen, destino)){
-                    legal = true;
-            }
-            break;
-        }
-        case 'rey':
-        {
-            // Movimiento normal
-            if(Math.abs(newFila - pieza.fila) <= 1 && Math.abs(newColumna - pieza.columna) <= 1)
-                legal = true;
-            // Enroques: se puede hacer si:
-            //  a) El rey no está en jaque
-            //  b) Ni el rey ni la torre se han movido aún de su posición inicial
-            //  c) No hay piezas entre medias de ambas que obstruyan el paso
-            else if(!jaque && Math.abs(newFila - pieza.fila) == 0 && 
-                caminoLibre(origen, destino)) // TODO mejorar (camino entre rey y torre directamente)
+            // Movimiento diagonal
+            if(movimientoDiagonal(pieza.columna, pieza.fila, newColumna, destino.fila)) // && caminoLibre(origen, destino)){
             {
-                let fila = pieza.negro ? 0 : 7;
-                let colTorre = -1;
-                // Enroque corto
-                if (newColumna - pieza.columna === 2 ) { colTorre = 7; }
-                // Enroque largo
-                else if (pieza.columna - newColumna === 2) { colTorre = 0; }
-
-                if(colTorre !== -1 && tablero[fila][colTorre] !== null && 
-                    tablero[fila][colTorre].tipo === "torre" ){
-                        let origenTorre = new Casilla(fila, colTorre);
-                        let destinoTorre = new Casilla(fila, (colTorre === 7) ? 5 : 3);
-                        legal = caminoLibre(origenTorre, destinoTorre);
+                let incrX = destino.columna > origen.columna ? 1 : -1;
+                let incrY = destino.fila > origen.fila ? 1 : -1;
+                let penultima = new Casilla(destino.columna - incrX, destino.fila - incrY);
+                // No hay casillas en medio; solo se mueve
+                if(caminoLibre(origen, destino))
+                    legal = true;
+                // Come la pieza del último paso del camino
+                else if(caminoLibre(origen, penultima)){
+                    tablero[penultima.fila][penultima.columna].visible = false;
+                    tablero[penultima.fila][penultima.columna] = null;
+                    sonidos.get('comer').play();
+                    legal = true;
                 }
+                else
+                    console.log("Camino no libre");
             }
             break;
         }
@@ -240,18 +219,6 @@ function movimientoReglamentario(pieza, newFila, newColumna)
     }
 
     return legal;
-}
-
-/* Devuelve true si el movimiento es reglamentario y además no come a ninguna pieza aliada */
-function movimientoLegal(pieza, newFila, newColumna)
-{
-    if(!movimientoReglamentario(pieza, newFila, newColumna)) { return false; }
-
-    // No permitimos el fuego amigo
-    let casDestino = tablero[newFila][newColumna];
-    if(casDestino !== null && casDestino.negro === pieza.negro) { return false; }
-
-    return true;
 }
 
 /* Devuelve true si hay un camino recto entre ambas casillas, false e.o.c. */
@@ -320,9 +287,7 @@ function moveTo(pieza, newFila, newColumna)
 
     // Si es un peón, gastamos el doble avance
     if(pieza.tipo === "ficha") { 
-        pieza.movDoble = false; 
         // Vemos si podemos hacernos una nueva reina
-        console.log(newFila);
         if((pieza.negro && newFila === 7) || (!pieza.negro && newFila == 0)){
             let aux = pieza;
             pieza = coronaFicha(aux);
@@ -369,69 +334,9 @@ function deselect(){
 
 //------------------ Jaques -------------------//
 
-/* Comprueba si un rey situado en { fil, col } estaría en jaque o no */
-function hayJaquePriv(fil, col, negro, actualiza){
-    // TODO: mejorar la complejidad de esto
-    for(let i = 0; i < 8; i++){
-        for(let j = 0; j < 8; j++){
-            // Si hay una pieza enemiga que puede comer al rey, está en jaque
-            if(tablero[i][j] !== null && tablero[i][j].negro !== negro && 
-                    movimientoReglamentario(tablero[i][j], fil, col)){ 
-                if(actualiza) { piezaJaque = tablero[i][j]; }
-                return true;
-            }
-        }
-    }
+/* Devuelve 'true' si un equipo se ha quedado sin fichas */
+function finPartida(){
     return false;
-}
-
-/* Capa de cebolla para la función anterior */
-function hayJaque(rey){
-    return hayJaquePriv(rey.fila, rey.columna, rey.negro, true);
-}
-
-/* Devuelve 'true' si el rey dado está en jaque mate, 'false' e.o.c. */
-function jaqueMate(rey){
-    // 1) Ver si el rey puede salir del jaque él solo
-    let mate = true;
-    let i = -1;
-    while(mate && i < 2) {
-        let j = -1;
-        while(mate && j < 2) {
-            // ¿Tiene movimientos posibles que no le supongan jaque? Entonces no es mate.
-            if(movimientoLegal(rey, rey.fila + i, rey.columna + j) && 
-                !hayJaquePriv(rey.fila + i, rey.columna + j, rey.negro, false)){
-                    console.log("No mate. El rey anda a " + (rey.fila + i) + ", " + (rey.columna + j));
-                    mate = false;
-            }
-            j++;
-        }
-        i++;
-    }
-    if(!mate) { return mate; }
-
-    // 2) Si no, ver si alguien se puede sacrificar por él (ponerse en medio del camino)
-    let camino = caminoEntre({fila: rey.fila, columna: rey.columna}, {fila: piezaJaque.fila, columna: piezaJaque.columna});
-    let k = 0; let n = camino.length;
-    while(mate && k < n){
-        let i = 0;
-        while(mate && i < 8){
-            let j = 0;
-            while(mate && j < 8){
-                let salvadora = tablero[i][j];
-                // Tiene que ser del mismo equipo, que no sea el propio rey, y que pueda ponerse en medio
-                if(salvadora !== null && salvadora.negro === rey.negro && salvadora.tipo != "rey" &&
-                    movimientoLegal(salvadora, camino[k].fila, camino[k].columna)){
-                        console.log("No mate. Pieza en " + salvadora.fila + ", " + salvadora.columna + " salva");
-                        mate = false;
-                    }
-                j++;   
-            }
-            i++;
-        }
-        k++;
-    }
-    return mate;
 }
 
 //--------------------Callbacks------------------//
@@ -465,10 +370,10 @@ function mouseUp(pointer){
             {
                 moveTo(selected, fila, columna);
 
-                if(false){ // TODO: comprobar que se acabe el juego (todas las fichas comidas)
-                        console.log("Jaque mate. Ganan " + (turno ? "negras" : "blancas"));
-                        sonidos.get('fanfare').play();
-                        gameOver = true;
+                if(finPartida()){ // TODO: comprobar que se acabe el juego (todas las fichas comidas)
+                    console.log("Jaque mate. Ganan " + (turno ? "negras" : "blancas"));
+                    sonidos.get('fanfare').play();
+                    gameOver = true;
                 }
 
                 // En cualquier caso, como hemos podido mover, deseleccionamos y avanzamos turno
@@ -504,9 +409,6 @@ function deshacer(){
     tablero[ultimoMov.destino.fila][ultimoMov.destino.columna] = piezaComida;
     // Resucitar a la pieza comida
     if(piezaComida !== null) { piezaComida.visible = true; }
-    // Otorgar de nuevo el doble avance (a peones)
-    if(piezaMovida.tipo === "peon" && piezaMovida.posicionInicial())
-        piezaMovida.movDoble = true;
     // Cambiar el turno y deseleccionar lo que hubiera seleccionado
     turno = !turno;
     deselect();

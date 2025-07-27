@@ -87,3 +87,17 @@ export function desdeMovil()
 
     return movil;
 }
+
+export function createSoundMap(nombres, nombresShared, scene){
+    let sonidos = new Map();
+    // Meter los propios y los compartidos
+    for(let i = 0; i < nombres.length; i++){
+        let s = scene.sound.add(nombres[i]);
+        sonidos.set(nombres[i], s);
+    }
+    for(let i = 0; i < nombresShared.length; i++){
+        let s = scene.sound.add(nombresShared[i]);
+        sonidos.set(nombresShared[i], s);
+    }
+    return sonidos;
+}
