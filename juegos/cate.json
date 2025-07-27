@@ -2,7 +2,7 @@
     {"name": "arcade", "games": ["pacman", "arkanoid", "invaders"] },
     {"name": "windows", "games": ["buscaminas", "solitario"] },
     {"name": "movil", "games": ["snake"] },
-    {"name": "mesa", "games": ["ajedrez", "solitario"] },
+    {"name": "mesa", "games": ["ajedrez", "damas", "solitario"] },
     {"name": "cartas", "games": ["solitario"] },
     {"name": "multijugador", "games": ["arkanoid", "ajedrez"] },
     {"name": "otros", "games": ["vida", "piano"] }
