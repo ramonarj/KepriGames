@@ -114,7 +114,7 @@ function create ()
     }
 
     // Cruceta superpuesta si estamos en móvil
-    if(!desdeMovil())
+    if(desdeMovil())
     {
         /*
         cruceta = this.add.sprite(game.config.width - (96 * 1.5) / 2, game.config.height - (96 * 1.5) / 2, 'cruceta')
