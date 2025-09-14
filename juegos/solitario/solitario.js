@@ -1,379 +1,308 @@
-// Ramón Arjona Quiñones, 2017-2025
-const TAM_CASILLA = 16;
-const FILAS = 40;
-const COLUMNAS = 40;
-const DEBUG_INFO = false;
-const SCORE_FONT = 18;
-const DEFAULT_SIM_TIME = 0.25 * 1000;
+// Ramón Arjona Quiñones, 2025
+const NUM_MONTONES = 7;
+const NUM_PALOS = 4;
+const CARTAS_PALO = 13;
+const MARGEN_IZQ = 82;
+const MARGEN_ARR = 100;
+
+const ANCHO_CARTAS = 23;
+const ALTO_CARTAS = 32;
+const MARGEN_CARTAS = 10;
+
+const ESCALA = 4;
 
 var config = {
     type: Phaser.AUTO,
-    width: TAM_CASILLA * COLUMNAS,
-    height: TAM_CASILLA * FILAS,
+    width: 800,
+    height: 600,
+    backgroundColor: 'rgba(33, 96, 54, 0)',
     scene: {
         preload: preload,
         create: create,
         update: update
-    }  
+    },
+    antialias: false  
 };
 
-var tiempo = 0;
-var simulationTime = DEFAULT_SIM_TIME;
-var gameRunning = false;
-var score = 0;
-var gen = 0;
-var poblacion = 0;
-var genText, poblacionText;
-var fpsText;
-var tablero = []; // guarda los sprites
-var auxTab = []; // booleanos
+var gScene;
+
+// Sonidos
 var selectSound;
-var musica, popSound;
-var playButton;
-var forwardButton;
+var mazoSound;
+var popSound;
+var errorSound;
+
+// Info del juego
+var cartaSel;
+var mazo;
+var montones = [];
+var montonesDestino = [];
+
+// Auxiliares
+var anchoReal = ANCHO_CARTAS * ESCALA;
 
 var game = new Phaser.Game(config);
 
-var sprites = ['fondo', 'celula'];
+var sprites = ['carta', 'reverso', 'marca'];
 
-function Casilla(x, y){
-    this.x = x;
-    this.y = y;
-}
+// Palos: 0 = Rombo | 1 = Corazón | 2 = Trébol | 3 = Pica
+// Números: del 1 al 13
+
 
 function preload ()
 {
     for(let i = 0; i < sprites.length; i++)
-        this.load.image(sprites[i], 'vida/assets/' + sprites[i] + '.png');
+        this.load.image(sprites[i], 'solitario/assets/' + sprites[i] + '.png');
 
-    this.load.spritesheet('buttons', 'vida/assets/buttons.png', { frameWidth: 64, frameHeight: 32 });
+    this.load.spritesheet('baraja', 'solitario/assets/baraja.png', { frameWidth: ANCHO_CARTAS, frameHeight: ALTO_CARTAS });
 
-    this.load.audio('music', 'vida/assets/music_2.wav');
+    //this.load.audio('music', 'vida/assets/music_2.wav');
     this.load.audio('pop', 'vida/assets/pop.wav');
+    this.load.audio('mazo', 'solitario/assets/mazo.wav');
+    this.load.audio('error', '_shared/audio/error.wav')
 }
 
 function create ()
 {
-    // Tablero lógico de booleanos
-    for(let i = 0; i < FILAS; i++) {
-        tablero[i] = new Array(COLUMNAS);
-        auxTab[i] = new Array(COLUMNAS);
-        for(let j = 0; j < COLUMNAS; j++) {
-            tablero[i][j] = null;
-            auxTab[i][j] = false;
-        }
+    gScene = this;
+
+    // Huecos para colocar las escaleras
+    montonesDestino = new Array(NUM_PALOS);
+    let iniPos = MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * 3;
+    for(let i = 0; i < NUM_PALOS; i++) {
+        creaMarca(iniPos + (anchoReal + MARGEN_CARTAS) * i, MARGEN_ARR, this);
     }
 
-    //  Fondo
-    this.add.image(game.config.width/2, game.config.height/2, 'fondo').setScale(COLUMNAS * TAM_CASILLA, FILAS * TAM_CASILLA);
+    // Montones
+    montones = new Array(NUM_MONTONES);
+    for(let i = 0; i < NUM_MONTONES; i++) {
+        // Marca
+        creaMarca(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270, this);
 
-    // HUD
-    genText = this.add.text(game.config.width - 120, 16, `Gen: 0`, { fontSize: SCORE_FONT + 'px', fill: '#fff' });
-    poblacionText = this.add.text(16, 16, `Poblacion: 0`, { fontSize: SCORE_FONT + 'px', fill: '#fff' });
-    playButton = this.add.image(game.config.width/2 - 32, 32, 'buttons');
-    playButton.setFrame(0);
-    playButton.setInteractive();
-    playButton.on('pointerdown', playButtonClick);
-    playButton.on('pointerover', playButtonHover);
-    playButton.on('pointerout', playButtonOut);
+        montones[i] = new Array(i + 1);
+        // Cartas tapadas
+        for(let j = 0; j < i; j++)
+        {
+            montones[i][j] = new Carta("Rombos", 10, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + 30 * j, this);
+            montones[i][j].image.setTexture('reverso');
+            montones[i][j].setMonton(montones[i]);
+        }
+        // La última destapada
+        montones[i][i] = new Carta("Rombos", i + 1, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + 30 * i, this);
+        montones[i][i].setMonton(montones[i]);
+    }
 
-    forwardButton = this.add.image(game.config.width/2 + 48, 32, 'buttons');
-    forwardButton.setFrame(4);
-    forwardButton.setInteractive();
-    forwardButton.on('pointerdown', forwardButtonClick);
-    forwardButton.on('pointerup', forwardButtonUp);
-    forwardButton.on('pointerover', forwardButtonHover);
-    forwardButton.on('pointerout', forwardButtonOut);
-
-    if(DEBUG_INFO)
-        fpsText = this.add.text(game.config.width - 144, game.config.height - 32, 'FPS', 
-            { fontSize: SCORE_FONT + 'px', fill: '#fff' });
+    // Mazo
+    mazo = new Mazo(5, MARGEN_IZQ, MARGEN_ARR);
 
     // Para poder
     this.time.advancedTiming = true;
 
     // - - - Sonido - - - //
     popSound = this.sound.add('pop', {volume: 0.25});
-    musica = this.sound.add('music', {volume: 0.4});
-    musica.loop = true;
-    musica.setRate(0.5);
-    musica.play();
-    musica.pause();
-
-    // - - - - Callbacks para el ratón - - - - //
-    this.input.on("pointerdown", mouseDown);
+    mazoSound = this.sound.add('mazo', {volume: 0.5});
+    errorSound = this.sound.add('error', {volume: 0.5});
 }
 
 function update (time, delta)
 {
-    if (!gameRunning) { return; }
 
-    // FPS (Nota: está función destroza el rendimiento)
-    if(DEBUG_INFO)
-        fpsText.setText('FPS: ' + game.loop.actualFps);
-
-    // Avanzar la simulación
-    if(tiempo > simulationTime)
-    {
-        tiempo -= simulationTime;
-        simulationStep();
-    }
-    tiempo+=delta;
 }
 
 
 //-------------------------Lógica----------------------//
 
-//1.4.MÉTODOS PARA CALCULAR POSICIONES ADYACENTES
-//Arriba
-function up(i) 
-{
-    i--;
-    if (i < 0)
-        i = FILAS-1;
-    return i;
-}
 
-//Abajo
-function down(i)
+function Mazo(cantidad, x, y)
 {
-    i++;
-    if (i > FILAS - 1)
-        i=0;
-    return i;
-}
-
-//Izquierda
-function left(i)
-{
-    i--;
-    if (i < 0)
-        i = COLUMNAS - 1;
-    return i;
-}
-
-//Derecha
-function right(i)
-{
-    i++;
-    if (i > COLUMNAS - 1)
-        i = 0;
-    return i;
-}
-
-function vecinos(i, j) 
-{
-    let numVirus = 0;
-
-    for (let k=up(i); k != down(down(i)); k=down(k)) 
+    this.index = cantidad;
+    this.count = cantidad;
+    // Descubiertas
+    this.cartas = new Array(cantidad);
+    let elThis = this;
+    for(let i = 0; i < cantidad; i++)
     {
-        for (let l = left(j); l != right(right(j)); l=right(l))
-        {
-            if (tablero[k][l] !== null && (k !== i || l !== j))
-                numVirus++;	
-        }
+        this.cartas[i] = new Carta("Corazones", i + 1, x + anchoReal + MARGEN_CARTAS, y, gScene);
+        this.cartas[i].image.visible = false;
+        this.cartas[i].setMonton(elThis);
     }
-    return numVirus;
-}
+    // Marca
+    creaMarca(MARGEN_IZQ, MARGEN_ARR, gScene);
 
-function simulationStep(){
-    gen++;
-    genText.text = 'Gen: ' + gen;
+    // Carta del revés
+    this.cubierta = gScene.add.image(MARGEN_IZQ, MARGEN_ARR, 'reverso').setScale(4,4);
+    this.cubierta.setInteractive();
+    this.cubierta.on('pointerdown', mazoClicked);  
 
-    // Calcular el siguiente estado
-    for (let i = 0; i < FILAS; i++)
+    // Funciones
+    this.siguiente = function()
     {
-        for (let j = 0; j < COLUMNAS; j++)
-        {
-            let virus = vecinos(i, j);
-            // Crea vida
-            if (virus === 3 || (tablero[i][j] !== null && virus === 2))
-                auxTab[i][j] = true;
-            // Mata
+        if(this.index != this.count)
+            this.cartas[this.index].image.visible = false;
+        // Siguiente carta
+        this.index = (this.index + 1) % (this.count + 1);
+
+        if(this.index != this.count)
+            this.cartas[this.index].image.visible = true;
+    }
+
+    this.sacaActual = function()
+    {
+        this.cartas.splice(this.index, 1);
+        this.count--;
+        // Se acabó el mazo
+        if(this.count <= 0) { this.cubierta.visible = false; }
+        // Volver a la carta anterior
+        else {
+            this.index--;
+            // Inicio de la baraja
+            if(this.index < 0) { this.index = this.count; }
             else
-                auxTab[i][j] = false;
+                this.cartas[this.index].image.visible = true;
         }
     }
+}
 
-    // Plasmarlo en el tablero real
-    poblacion = 0;
-    for (let i = 0; i<FILAS; i++)
+/* Constructora de la clase "Carta" */
+function Carta(palo, numero, x, y, scene)
+{
+    this.palo = palo;
+    this.numero = numero;
+    this.monton = null;
+
+    palo = paloNum(palo);
+    //// Aleatoria
+    //let palo = Math.floor(Math.random() * NUM_PALOS);
+    //let num = Math.floor(Math.random() * CARTAS_PALO)
+    let carta = scene.add.image(x, y, 'baraja').setScale(4,4);
+    carta.setFrame(palo * CARTAS_PALO + (numero - 1)); // Aleatoria
+    carta.setInteractive({ draggable: true });
+
+    let elThis = this;
+
+    // Callbacks
+    carta.on('drag', (pointer, dragX, dragY) => {
+        if(carta.texture.key === "reverso") { return; } // TODO: muy feo esto
+
+        carta.setPosition(dragX, dragY);
+    });
+
+    carta.on('dragend', (pointer, go) => {
+        if(carta.texture.key === "reverso") { return; }
+
+        carta.setDepth(0);
+        cardDropped();
+        cartaSel = null;
+    });
+
+    carta.on('pointerdown', (pointer, x, y, event) => {
+        if(carta.texture.key === "reverso") { return; } 
+
+        cartaSel = elThis;
+        carta.setDepth(2);
+        cardClicked();
+    });
+
+    this.image = carta;
+
+    this.setMonton = function(monton)
     {
-        for (let j = 0; j<COLUMNAS; j++)
-        {
-            if(auxTab[i][j]){
-                poblacion++;
-                if(tablero[i][j] === null){
-                    let cel = game.scene.scenes[0].add.image(j*TAM_CASILLA,i*TAM_CASILLA, 'celula').setScale(TAM_CASILLA).setOrigin(0);
-                    tablero[i][j] = cel;
-                }
-            }
-            else{
-                if(tablero[i][j] !== null){
-                    tablero[i][j].destroy();
-                    tablero[i][j] = null;
-                }
-            }
-        }
+        this.monton = monton;
     }
-    //tab = aux
-    poblacionText.text = "Poblacion: " + poblacion;
 }
 
-/* Devuelve la casilla a la que se llegará desde una posición y dirección dadas */
-function siguiente(pos, dir){
-    let newPos = new Casilla(pos.x + dir.x, pos.y + dir.y);
-    if(newPos.x < 0) { newPos.x += COLUMNAS; }
-    else if(newPos.x >= COLUMNAS) { newPos.x %= COLUMNAS; }
-
-    if(newPos.y < 0) { newPos.y += FILAS; }
-    else if(newPos.y >= FILAS) { newPos.y %= FILAS; }
-
-    return newPos;
+function paloNum(nombrePalo)
+{
+    let num = -1;
+    if(nombrePalo === "Rombos") { num = 0;}
+    if(nombrePalo === "Corazones") {num = 1;}
+    if(nombrePalo === "Treboles") {num = 2;}
+    if(nombrePalo === "Picas") {num = 3;}
+    return num;
 }
 
-
-function dentroLimites(cas){
-    return (cas.x >= 0 && cas.x < COLUMNAS && cas.y >= 0 && cas.y < FILAS);
+function creaMarca(x, y, scene)
+{
+    let marca = scene.add.image(x, y, 'marca').setScale(4,4);
+    return marca;
 }
+
 
 
 //--------------------Callbacks------------------//
 
-function mouseDown(pointer){
-    if(gameRunning) { return; }
 
-    const fila = Math.floor(pointer.y / TAM_CASILLA);
-    const columna = Math.floor(pointer.x / TAM_CASILLA);
+function cardClicked(){
+    console.log("Carta clicada");
+    popSound.play();
+}
 
-    // Botón izquierdo ->  crear/quitar vida
-    if(pointer.leftButtonDown())
+function cardDropped(pointer, dragX, dragY)
+{
+    let w = ANCHO_CARTAS * 4 + 10;
+
+    let col = Math.floor(cartaSel.image.x / w) + 1;
+    let enMonton = cartaSel.image.y > (270 - 50);
+
+    // Error colocando
+    //console.log(montones[col - 1][montones[col - 1].length - 1].numero);
+    //let numDestino = montones[col - 1][montones[col - 1].length - 1].numero; 
+    if(col > NUM_MONTONES || col <= 0 || (!enMonton && col < 4))// || (numDestino - cartaSel.numero !== 1))
     {
-        if(tablero[fila][columna] === null){
-            let cel = this.scene.add.image(columna * TAM_CASILLA, fila * TAM_CASILLA, 'celula').setScale(TAM_CASILLA).setOrigin(0);
-            tablero[fila][columna] = cel;
-        }
-        else{
-            tablero[fila][columna].destroy();
-            tablero[fila][columna] = null;
-        }
+        errorSound.play();
+        // TODO: hacer animación para que vuelva a su sitio
+
+        // Devolverla a su sitio físicamente
+        let numElems = cartaSel.monton.length;
+        let posX = cartaSel.monton[numElems - 2].image.x;
+        let posY = cartaSel.monton[numElems - 2].image.y + 30;
+        cartaSel.image.setPosition(posX, posY);
+    }
+
+    // Carta bien colocada (en otro sitio distinto)
+    else
+    {
         popSound.play();
+
+        // Colocarla física
+        let posY = enMonton ? 270 + 30 * montones[col - 1].length : MARGEN_ARR;
+        cartaSel.image.setPosition(MARGEN_IZQ + (col -1) * w, posY);
+        // y lógicamente
+        if(cartaSel.monton != null)
+        {
+            // Se ha sacado del mazo
+            if(cartaSel.monton === mazo) {
+                mazo.sacaActual();
+            }
+            else
+            {
+                cartaSel.monton.pop();
+                if(cartaSel.monton.length > 0)
+                {
+                    let destapada = cartaSel.monton[cartaSel.monton.length - 1];
+                    destapada.image.setTexture('baraja');
+                    destapada.image.setFrame(paloNum(destapada.palo) * CARTAS_PALO + (destapada.numero - 1)); 
+                }
+            }
+        }
+
+        if(enMonton)
+        {
+            let count = montones[col - 1].length;
+            montones[col - 1].push(cartaSel);
+            cartaSel.monton = montones[col - 1];
+        }
+        else
+            cartaSel.monton = null;
     }
+
+    // Se queda en su sitio
 }
 
-function playButtonClick(){
-    if(gameRunning){
-        playButton.setFrame(0);
-        musica.pause();
-    }
-    else{
-        playButton.setFrame(2);
-        musica.resume();
-    }
-
-    gameRunning = !gameRunning; // pausar/reanudar la simulación
-}
-
-function playButtonHover(){
-    if(gameRunning)
-        playButton.setFrame(3);
-    else
-        playButton.setFrame(1);
-}
-function playButtonOut(){
-    if(gameRunning)
-        playButton.setFrame(2);
-    else
-        playButton.setFrame(0);
-}
-
-function forwardButtonClick(){
-    if(gameRunning){
-        simulationTime *= 0.25; // 4 veces más rápido
-        musica.setRate(1.5);
-    }
-}
-
-function forwardButtonUp(){
-    if(gameRunning){
-        simulationTime = DEFAULT_SIM_TIME
-        musica.setRate(1);
-    }
-}
-
-function forwardButtonHover(){
-    forwardButton.setFrame(5);
-}
-function forwardButtonOut(){
-    forwardButton.setFrame(4);
-}
-
-
-function mouseUp(pointer){
-    // Botón izquierdo
-    if(!pointer.leftButtonReleased){ // ????????
-        //console.log("Botón izquierdo levantado");
-    }
+function mazoClicked(){
+    mazoSound.play();
+    mazo.siguiente();
 }
 
 
 //-----------------------------------------------------------------------------------
-
-/*
-
-//1.2.CONSTRUCTORA DE ARCHIVO
-public JuegoVida(string file) 
-{
-    StreamReader entrada = new StreamReader("colonia");
-    int fils = int.Parse(entrada.ReadLine());
-    int cols = int.Parse(entrada.ReadLine());
-    tab = new bool[fils, cols];
-
-    for (int i = 0; i < fils; i++)
-    {
-        string s = entrada.ReadLine();
-        for (int j = 0; j < cols; j++)
-            tab[i, j] = (s[j]== '1');
-    }
-    entrada.Close();
-}
-
-//1.7.POBLACIÓN MUERTA (AÑADIDO)
-public bool pobMuerta ()
-{
-    bool muerta = true;
-    int i = 0;
-    while (i < tab.GetLength(0) && muerta)
-    {
-        int j = 0;
-        while (j < tab.GetLength(1) && muerta)
-        {
-            if (tab[i, j])
-                muerta = false;
-            j++;
-        }
-        i++;
-    }
-    return muerta;
-}
-}
-
-//2.CLASE MAINCLASS
-class MainClass
-{
-//2.1.MÉTODO MAIN
-public static void Main(string[] args)
-{
-    JuegoVida tab = menu();
-    tab.Dibuja();
-    System.Threading.Thread.Sleep(500);
-
-    while (!tab.pobMuerta()) 
-    {
-        Console.Clear();
-        tab.Siguiente();
-        tab.Dibuja();
-        System.Threading.Thread.Sleep(500);
-    }
-}
-*/

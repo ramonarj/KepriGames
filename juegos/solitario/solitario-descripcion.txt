@@ -1,5 +1,11 @@
-El 'Juego de la Vida' es un juego de 0 jugadores creado por John Conay en 1970.<br>
-En él, se pinta un estado inicial y se simula su evolución hasta el infinito. Cada 'célula'
-(cuadrados blancos) debe cumplir varios requisitos para sobrevivir una generación más<br>
+Con una baraja de tipo francesa, deberás colocar las cartas de los 4 palos en orden ascendente 
+en las ranuras situadas arriba a la derecha. <br>
+Para ello, puedes usar los 7 montones de abajo mientras robas nuevas cartas del mazo.<br>
+<br>
+Reglas:<br>
+- Para colocar una carta en un montón, debe ser de un palo de color contrario (rojo<->negro)
+y su valor debe ser 1 menos de la carta que más sobresale.<br>
+[Ej: en un montón en el que sobresale el 6 de picas, solo puede ponerse un 5 de corazones/rombos]<br><br>
+Ten en cuenta que NO todas las partidas se pueden ganar
 <br><br>
 Kepri Studios, 2025
