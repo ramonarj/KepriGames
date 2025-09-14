@@ -8,6 +8,7 @@ const MARGEN_ARR = 100;
 const ANCHO_CARTAS = 23;
 const ALTO_CARTAS = 32;
 const MARGEN_CARTAS = 10;
+const MARGEN_CARTAS_Y = 30;
 
 const ESCALA = 4;
 
@@ -71,6 +72,7 @@ function create ()
     let iniPos = MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * 3;
     for(let i = 0; i < NUM_PALOS; i++) {
         creaMarca(iniPos + (anchoReal + MARGEN_CARTAS) * i, MARGEN_ARR, this);
+        montonesDestino[i] = new Array();
     }
 
     // Montones
@@ -83,12 +85,12 @@ function create ()
         // Cartas tapadas
         for(let j = 0; j < i; j++)
         {
-            montones[i][j] = new Carta("Rombos", 10, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + 30 * j, this);
+            montones[i][j] = new Carta("Rombos", 10, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * j, this);
             montones[i][j].image.setTexture('reverso');
             montones[i][j].setMonton(montones[i]);
         }
         // La última destapada
-        montones[i][i] = new Carta("Rombos", i + 1, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + 30 * i, this);
+        montones[i][i] = new Carta("Rombos", i + 1, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * i, this);
         montones[i][i].setMonton(montones[i]);
     }
 
@@ -122,7 +124,7 @@ function Mazo(cantidad, x, y)
     let elThis = this;
     for(let i = 0; i < cantidad; i++)
     {
-        this.cartas[i] = new Carta("Corazones", i + 1, x + anchoReal + MARGEN_CARTAS, y, gScene);
+        this.cartas[i] = new Carta("Picas", i + 1, x + anchoReal + MARGEN_CARTAS, y, gScene);
         this.cartas[i].image.visible = false;
         this.cartas[i].setMonton(elThis);
     }
@@ -233,21 +235,20 @@ function creaMarca(x, y, scene)
 
 
 function cardClicked(){
-    console.log("Carta clicada");
     popSound.play();
 }
 
 function cardDropped(pointer, dragX, dragY)
 {
-    let w = ANCHO_CARTAS * 4 + 10;
+    let w = anchoReal + MARGEN_CARTAS;
 
-    let col = Math.floor(cartaSel.image.x / w) + 1;
+    let col = Math.floor((cartaSel.image.x - MARGEN_IZQ / 2) / w);
     let enMonton = cartaSel.image.y > (270 - 50);
 
     // Error colocando
     //console.log(montones[col - 1][montones[col - 1].length - 1].numero);
     //let numDestino = montones[col - 1][montones[col - 1].length - 1].numero; 
-    if(col > NUM_MONTONES || col <= 0 || (!enMonton && col < 4))// || (numDestino - cartaSel.numero !== 1))
+    if(!puedeColocar(col, enMonton))// || (numDestino - cartaSel.numero !== 1))
     {
         errorSound.play();
         // TODO: hacer animación para que vuelva a su sitio
@@ -255,7 +256,7 @@ function cardDropped(pointer, dragX, dragY)
         // Devolverla a su sitio físicamente
         let numElems = cartaSel.monton.length;
         let posX = cartaSel.monton[numElems - 2].image.x;
-        let posY = cartaSel.monton[numElems - 2].image.y + 30;
+        let posY = cartaSel.monton[numElems - 2].image.y + MARGEN_CARTAS_Y;
         cartaSel.image.setPosition(posX, posY);
     }
 
@@ -265,8 +266,8 @@ function cardDropped(pointer, dragX, dragY)
         popSound.play();
 
         // Colocarla física
-        let posY = enMonton ? 270 + 30 * montones[col - 1].length : MARGEN_ARR;
-        cartaSel.image.setPosition(MARGEN_IZQ + (col -1) * w, posY);
+        let posY = enMonton ? 270 + MARGEN_CARTAS_Y * montones[col].length : MARGEN_ARR;
+        cartaSel.image.setPosition(MARGEN_IZQ + col * w, posY);
         // y lógicamente
         if(cartaSel.monton != null)
         {
@@ -288,12 +289,14 @@ function cardDropped(pointer, dragX, dragY)
 
         if(enMonton)
         {
-            let count = montones[col - 1].length;
-            montones[col - 1].push(cartaSel);
-            cartaSel.monton = montones[col - 1];
+            montones[col].push(cartaSel);
+            cartaSel.monton = montones[col];
         }
         else
-            cartaSel.monton = null;
+        {
+            montonesDestino[col - 3].push(cartaSel);
+            cartaSel.monton = montonesDestino[col];
+        }
     }
 
     // Se queda en su sitio
@@ -302,6 +305,50 @@ function cardDropped(pointer, dragX, dragY)
 function mazoClicked(){
     mazoSound.play();
     mazo.siguiente();
+}
+
+function puedeColocar(mon, enMonton)
+{
+    // Comprobar que está dentro de los límites
+    if(mon >= NUM_MONTONES || mon < 0) { return false; }
+    if(!enMonton && mon < 3) { return false; }
+
+    let tamañoMonton = enMonton ? montones[mon].length : montonesDestino[mon - 3].length;
+    // Colocar en los montones normales
+    if(enMonton && tamañoMonton > 0)
+    {
+        let numDestino = montones[mon][tamañoMonton - 1].numero; 
+        let paloDestino = montones[mon][tamañoMonton - 1].palo; 
+
+        // Tienen que formar una escalera
+        if(numDestino - cartaSel.numero !== 1) { return false; }
+        // Y que sea de colores alternos
+        let sumaPalos = paloNum(cartaSel.palo) + paloNum(paloDestino);
+        if(sumaPalos < 2 || sumaPalos > 4) { return false; }
+    }
+
+    // Colocar en los montones destino
+    if(!enMonton)
+    {
+        if(tamañoMonton > 0)
+        {
+            mon -=3;
+            let numDestino = montonesDestino[mon][tamañoMonton - 1].numero; 
+            let paloDestino = montonesDestino[mon][tamañoMonton - 1].palo; 
+
+            // Tiene que ser el consecutivo
+            if(cartaSel.numero - numDestino !== 1) { return false; }
+            // Y que sean del mismo palo
+            if(cartaSel.palo != paloDestino) { return false; }
+        }
+        // La primera carta tiene que ser un as
+        else
+        {
+            if(cartaSel.numero != 1) { return false; }
+        }
+    } 
+
+    return true;
 }
 
 
