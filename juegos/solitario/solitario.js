@@ -32,6 +32,7 @@ var selectSound;
 var mazoSound;
 var popSound;
 var errorSound;
+var victoriaSound;
 
 // Info del juego
 var cartaSel;
@@ -41,10 +42,11 @@ var montonesDestino = [];
 
 // Auxiliares
 var anchoReal = ANCHO_CARTAS * ESCALA;
+const nombrePalos = ["Rombos", "Corazones", "Treboles", "Picas"];
 
 var game = new Phaser.Game(config);
 
-var sprites = ['carta', 'reverso', 'marca'];
+const sprites = ['carta', 'reverso', 'marca'];
 
 // Palos: 0 = Rombo | 1 = Corazón | 2 = Trébol | 3 = Pica
 // Números: del 1 al 13
@@ -60,14 +62,26 @@ function preload ()
     //this.load.audio('music', 'vida/assets/music_2.wav');
     this.load.audio('pop', 'vida/assets/pop.wav');
     this.load.audio('mazo', 'solitario/assets/mazo.wav');
-    this.load.audio('error', '_shared/audio/error.wav')
+    this.load.audio('error', '_shared/audio/error.wav');
+    this.load.audio('victoria', '_shared/audio/fanfare.wav');
 }
 
 function create ()
 {
     gScene = this;
 
-    // Huecos para colocar las escaleras
+    // Crear las 52 cartas para repartirlas entre mazo y montones
+    var cartas = new Array(NUM_PALOS * CARTAS_PALO);
+    let count = 0;
+    for(let i = 0; i < NUM_PALOS; i++) {
+        for(let j = 0; j < CARTAS_PALO; j++) {
+            cartas[count] = new Carta(nombrePalos[i], j + 1, 0,0, this);
+            count++;
+        }
+    }
+    count=0;
+
+    // Montones destino
     montonesDestino = new Array(NUM_PALOS);
     let iniPos = MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * 3;
     for(let i = 0; i < NUM_PALOS; i++) {
@@ -75,7 +89,7 @@ function create ()
         montonesDestino[i] = new Array();
     }
 
-    // Montones
+    // Montones normales
     montones = new Array(NUM_MONTONES);
     for(let i = 0; i < NUM_MONTONES; i++) {
         // Marca
@@ -85,25 +99,30 @@ function create ()
         // Cartas tapadas
         for(let j = 0; j < i; j++)
         {
-            montones[i][j] = new Carta("Rombos", 10, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * j, this);
+            montones[i][j] = cartas[count];
+            montones[i][j].image.setPosition(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * j);
             montones[i][j].image.setTexture('reverso');
+            montones[i][j].image.setDepth(montones[i][j].image.y);
             montones[i][j].setMonton(montones[i]);
+            count++;
         }
         // La última destapada
-        montones[i][i] = new Carta("Rombos", i + 1, MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * i, this);
+        montones[i][i] = cartas[count];
+        montones[i][i].image.setPosition(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * i);
+        montones[i][i].image.setDepth(montones[i][i].image.y);
         montones[i][i].setMonton(montones[i]);
+        count++;
     }
 
     // Mazo
-    mazo = new Mazo(5, MARGEN_IZQ, MARGEN_ARR);
+    var restantes = cartas.slice(count, cartas.length);
+    mazo = new Mazo(restantes, MARGEN_IZQ, MARGEN_ARR);
 
-    // Para poder
-    this.time.advancedTiming = true;
-
-    // - - - Sonido - - - //
+    // - - - Sonidos - - - //
     popSound = this.sound.add('pop', {volume: 0.25});
     mazoSound = this.sound.add('mazo', {volume: 0.5});
-    errorSound = this.sound.add('error', {volume: 0.5});
+    errorSound = this.sound.add('error', {volume: 0.4});
+    victoriaSound = this.sound.add('victoria', {volume: 0.5});
 }
 
 function update (time, delta)
@@ -115,19 +134,18 @@ function update (time, delta)
 //-------------------------Lógica----------------------//
 
 
-function Mazo(cantidad, x, y)
+function Mazo(cartas, x, y)
 {
-    this.index = cantidad;
-    this.count = cantidad;
+    this.cartas = cartas;
+    this.index = cartas.length;
+    this.count = cartas.length;
     // Descubiertas
-    this.cartas = new Array(cantidad);
-    let elThis = this;
-    for(let i = 0; i < cantidad; i++)
+    for(let i = 0; i < this.count; i++)
     {
-        this.cartas[i] = new Carta("Picas", i + 1, x + anchoReal + MARGEN_CARTAS, y, gScene);
+        this.cartas[i].image.setPosition(x + anchoReal + MARGEN_CARTAS, y);
         this.cartas[i].image.visible = false;
-        this.cartas[i].setMonton(elThis);
     }
+
     // Marca
     creaMarca(MARGEN_IZQ, MARGEN_ARR, gScene);
 
@@ -137,6 +155,7 @@ function Mazo(cantidad, x, y)
     this.cubierta.on('pointerdown', mazoClicked);  
 
     // Funciones
+    /* Saca la siguiente carta del mazo */
     this.siguiente = function()
     {
         if(this.index != this.count)
@@ -148,11 +167,13 @@ function Mazo(cantidad, x, y)
             this.cartas[this.index].image.visible = true;
     }
 
+    /* Elimina del mazo la carta boca arriba */
     this.sacaActual = function()
     {
         this.cartas.splice(this.index, 1);
         this.count--;
         // Se acabó el mazo
+        console.log(this.count);
         if(this.count <= 0) { this.cubierta.visible = false; }
         // Volver a la carta anterior
         else {
@@ -162,6 +183,11 @@ function Mazo(cantidad, x, y)
             else
                 this.cartas[this.index].image.visible = true;
         }
+    }
+    /* Devuelve al mazo la carta que se había elegido */
+    this.devuelve = function()
+    {
+        cartaSel.image.setPosition(this.cubierta.x + anchoReal + MARGEN_CARTAS, this.cubierta.y);
     }
 }
 
@@ -192,8 +218,9 @@ function Carta(palo, numero, x, y, scene)
     carta.on('dragend', (pointer, go) => {
         if(carta.texture.key === "reverso") { return; }
 
-        carta.setDepth(0);
+        //carta.setDepth(0);
         cardDropped();
+        carta.setDepth(carta.y);
         cartaSel = null;
     });
 
@@ -201,8 +228,8 @@ function Carta(palo, numero, x, y, scene)
         if(carta.texture.key === "reverso") { return; } 
 
         cartaSel = elThis;
-        carta.setDepth(2);
         cardClicked();
+        carta.setDepth(600);
     });
 
     this.image = carta;
@@ -246,18 +273,22 @@ function cardDropped(pointer, dragX, dragY)
     let enMonton = cartaSel.image.y > (270 - 50);
 
     // Error colocando
-    //console.log(montones[col - 1][montones[col - 1].length - 1].numero);
-    //let numDestino = montones[col - 1][montones[col - 1].length - 1].numero; 
     if(!puedeColocar(col, enMonton))// || (numDestino - cartaSel.numero !== 1))
     {
         errorSound.play();
-        // TODO: hacer animación para que vuelva a su sitio
 
-        // Devolverla a su sitio físicamente
-        let numElems = cartaSel.monton.length;
-        let posX = cartaSel.monton[numElems - 2].image.x;
-        let posY = cartaSel.monton[numElems - 2].image.y + MARGEN_CARTAS_Y;
-        cartaSel.image.setPosition(posX, posY);
+        // Venía del mazo
+        if(cartaSel.monton === null) { mazo.devuelve(); }
+        // Venía de un montón
+        else
+        {
+            // Devolverla a su sitio físicamente,  TODO: hacer animación para que vuelva a su sitio
+            let indMonton = montones.indexOf(cartaSel.monton);
+
+            let posX = MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * indMonton;
+            let posY = 270 + MARGEN_CARTAS_Y * (montones[indMonton].length - 1);
+            cartaSel.image.setPosition(posX, posY);
+        }
     }
 
     // Carta bien colocada (en otro sitio distinto)
@@ -269,10 +300,10 @@ function cardDropped(pointer, dragX, dragY)
         let posY = enMonton ? 270 + MARGEN_CARTAS_Y * montones[col].length : MARGEN_ARR;
         cartaSel.image.setPosition(MARGEN_IZQ + col * w, posY);
         // y lógicamente
-        if(cartaSel.monton != null)
+        if(true)//cartaSel.monton != null)
         {
             // Se ha sacado del mazo
-            if(cartaSel.monton === mazo) {
+            if(cartaSel.monton === null) {
                 mazo.sacaActual();
             }
             else
@@ -295,11 +326,16 @@ function cardDropped(pointer, dragX, dragY)
         else
         {
             montonesDestino[col - 3].push(cartaSel);
-            cartaSel.monton = montonesDestino[col];
+            cartaSel.monton = montonesDestino[col - 3];
         }
     }
 
     // Se queda en su sitio
+    if(compruebaVictoria())
+    {
+        console.log("VICTORIA");
+        victoriaSound.play();
+    }
 }
 
 function mazoClicked(){
@@ -351,5 +387,16 @@ function puedeColocar(mon, enMonton)
     return true;
 }
 
+function compruebaVictoria()
+{
+    let victoria = true;
+    let i = 0;
+    while(i < montones.length && victoria)
+    {
+        victoria = (montones[i].length <= 0);
+        i++;   
+    }
+    return victoria;
+}
 
 //-----------------------------------------------------------------------------------
