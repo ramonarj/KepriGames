@@ -9,6 +9,7 @@ const ANCHO_CARTAS = 23;
 const ALTO_CARTAS = 32;
 const MARGEN_CARTAS = 10;
 const MARGEN_CARTAS_Y = 30;
+const INICIO_MONTONES_Y = 270;
 
 const ESCALA = 4;
 
@@ -93,14 +94,14 @@ function create ()
     montones = new Array(NUM_MONTONES);
     for(let i = 0; i < NUM_MONTONES; i++) {
         // Marca
-        creaMarca(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270, this);
+        creaMarca(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, INICIO_MONTONES_Y, this);
 
         montones[i] = new Array(i + 1);
         // Cartas tapadas
         for(let j = 0; j < i; j++)
         {
             montones[i][j] = cartas[count];
-            montones[i][j].image.setPosition(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * j);
+            montones[i][j].image.setPosition(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, INICIO_MONTONES_Y + MARGEN_CARTAS_Y * j);
             montones[i][j].image.setTexture('reverso');
             montones[i][j].image.setDepth(montones[i][j].image.y);
             montones[i][j].setMonton(montones[i]);
@@ -108,7 +109,7 @@ function create ()
         }
         // La última destapada
         montones[i][i] = cartas[count];
-        montones[i][i].image.setPosition(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, 270 + MARGEN_CARTAS_Y * i);
+        montones[i][i].image.setPosition(MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * i, INICIO_MONTONES_Y + MARGEN_CARTAS_Y * i);
         montones[i][i].image.setDepth(montones[i][i].image.y);
         montones[i][i].setMonton(montones[i]);
         count++;
@@ -199,9 +200,7 @@ function Carta(palo, numero, x, y, scene)
     this.monton = null;
 
     palo = paloNum(palo);
-    //// Aleatoria
-    //let palo = Math.floor(Math.random() * NUM_PALOS);
-    //let num = Math.floor(Math.random() * CARTAS_PALO)
+
     let carta = scene.add.image(x, y, 'baraja').setScale(4,4);
     carta.setFrame(palo * CARTAS_PALO + (numero - 1)); // Aleatoria
     carta.setInteractive({ draggable: true });
@@ -240,14 +239,9 @@ function Carta(palo, numero, x, y, scene)
     }
 }
 
-function paloNum(nombrePalo)
+function paloNum(nombre)
 {
-    let num = -1;
-    if(nombrePalo === "Rombos") { num = 0;}
-    if(nombrePalo === "Corazones") {num = 1;}
-    if(nombrePalo === "Treboles") {num = 2;}
-    if(nombrePalo === "Picas") {num = 3;}
-    return num;
+    return nombrePalos.indexOf(nombre);
 }
 
 function creaMarca(x, y, scene)
@@ -260,81 +254,44 @@ function creaMarca(x, y, scene)
 
 //--------------------Callbacks------------------//
 
-
 function cardClicked(){
     popSound.play();
 }
 
 function cardDropped(pointer, dragX, dragY)
 {
+    // 0) Calcular el sitio donde se quiere dejar
     let w = anchoReal + MARGEN_CARTAS;
 
     let col = Math.floor((cartaSel.image.x - MARGEN_IZQ / 2) / w);
-    let enMonton = cartaSel.image.y > (270 - 50);
+    let enMonton = cartaSel.image.y > (INICIO_MONTONES_Y - 50);
 
-    // Error colocando
-    if(!puedeColocar(col, enMonton))// || (numDestino - cartaSel.numero !== 1))
+    // 1) Comprobar que la carta se puede colocar en el sitio deseado
+    if(!puedeColocar(col, enMonton))  // Error colocando
     {
         errorSound.play();
 
-        // Venía del mazo
-        if(cartaSel.monton === null) { mazo.devuelve(); }
-        // Venía de un montón
-        else
+        // Devolverla a su sitio físicamente, TODO: hacer animación para que vuelva a su sitio
+        if(cartaSel.monton === null) { mazo.devuelve(); } // Venía del mazo
+        else if(montonesDestino.indexOf(cartaSel.monton) < 0) // Venía de un montón normal
         {
-            // Devolverla a su sitio físicamente,  TODO: hacer animación para que vuelva a su sitio
             let indMonton = montones.indexOf(cartaSel.monton);
 
             let posX = MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * indMonton;
-            let posY = 270 + MARGEN_CARTAS_Y * (montones[indMonton].length - 1);
+            let posY = INICIO_MONTONES_Y + MARGEN_CARTAS_Y * (montones[indMonton].length - 1);
             cartaSel.image.setPosition(posX, posY);
         }
-    }
-
-    // Carta bien colocada (en otro sitio distinto)
-    else
-    {
-        popSound.play();
-
-        // Colocarla física
-        let posY = enMonton ? 270 + MARGEN_CARTAS_Y * montones[col].length : MARGEN_ARR;
-        cartaSel.image.setPosition(MARGEN_IZQ + col * w, posY);
-        // y lógicamente
-        if(true)//cartaSel.monton != null)
+        else // Venía de un destino
         {
-            // Se ha sacado del mazo
-            if(cartaSel.monton === null) {
-                mazo.sacaActual();
-            }
-            else
-            {
-                cartaSel.monton.pop();
-                if(cartaSel.monton.length > 0)
-                {
-                    let destapada = cartaSel.monton[cartaSel.monton.length - 1];
-                    destapada.image.setTexture('baraja');
-                    destapada.image.setFrame(paloNum(destapada.palo) * CARTAS_PALO + (destapada.numero - 1)); 
-                }
-            }
-        }
+            let indMonton = montonesDestino.indexOf(cartaSel.monton);
 
-        if(enMonton)
-        {
-            montones[col].push(cartaSel);
-            cartaSel.monton = montones[col];
-        }
-        else
-        {
-            montonesDestino[col - 3].push(cartaSel);
-            cartaSel.monton = montonesDestino[col - 3];
+            let posX = MARGEN_IZQ + (anchoReal + MARGEN_CARTAS) * (indMonton + 3);
+            cartaSel.image.setPosition(posX, MARGEN_ARR);
         }
     }
-
-    // Se queda en su sitio
-    if(compruebaVictoria())
+    else // Carta bien colocada (en otro sitio distinto)
     {
-        console.log("VICTORIA");
-        victoriaSound.play();
+        colocaCarta(col, enMonton, w);
     }
 }
 
@@ -359,8 +316,7 @@ function puedeColocar(mon, enMonton)
         // Tienen que formar una escalera
         if(numDestino - cartaSel.numero !== 1) { return false; }
         // Y que sea de colores alternos
-        let sumaPalos = paloNum(cartaSel.palo) + paloNum(paloDestino);
-        if(sumaPalos < 2 || sumaPalos > 4) { return false; }
+        if(Math.floor(paloNum(cartaSel.palo) / 2) === Math.floor(paloNum(paloDestino) / 2)) { return false; }
     }
 
     // Colocar en los montones destino
@@ -375,20 +331,50 @@ function puedeColocar(mon, enMonton)
             // Tiene que ser el consecutivo
             if(cartaSel.numero - numDestino !== 1) { return false; }
             // Y que sean del mismo palo
-            if(cartaSel.palo != paloDestino) { return false; }
+            if(cartaSel.palo !== paloDestino) { return false; }
         }
         // La primera carta tiene que ser un as
-        else
-        {
-            if(cartaSel.numero != 1) { return false; }
-        }
+        else if(cartaSel.numero !== 1) { return false; }
     } 
-
     return true;
+}
+
+function colocaCarta(col, enMonton, w)
+{
+    popSound.play();
+
+    // a) Colocarla físicamente
+    let posY = enMonton ? INICIO_MONTONES_Y + MARGEN_CARTAS_Y * montones[col].length : MARGEN_ARR;
+    cartaSel.image.setPosition(MARGEN_IZQ + col * w, posY);
+    // b) Sacarla del anterior montón/mazo
+    if(cartaSel.monton === null) { mazo.sacaActual(); } // Se ha sacado del mazo
+    else
+    {
+        cartaSel.monton.pop();
+        if(cartaSel.monton.length > 0)
+        {
+            // Destapar la de abajo
+            let destapada = cartaSel.monton[cartaSel.monton.length - 1];
+            destapada.image.setTexture('baraja');
+            destapada.image.setFrame(paloNum(destapada.palo) * CARTAS_PALO + (destapada.numero - 1)); 
+        }
+    }
+
+    // c) Ponerla en el nuevo montón
+    let nuevoMonton = enMonton ? montones[col] : montonesDestino[col-3];
+    nuevoMonton.push(cartaSel);
+    cartaSel.monton = nuevoMonton;
+
+    // d) Comprobar si hemos ganado
+    if(compruebaVictoria()) {
+        victoriaSound.play();
+    }
 }
 
 function compruebaVictoria()
 {
+    if(mazo.count > 0) { return false; } // Quedan cartas en el mazo
+
     let victoria = true;
     let i = 0;
     while(i < montones.length && victoria)
