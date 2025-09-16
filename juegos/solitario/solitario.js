@@ -1,4 +1,5 @@
 // Ramón Arjona Quiñones, 2025
+import { getRandomInt } from "../utils.js";
 const NUM_MONTONES = 7;
 const NUM_PALOS = 4;
 const CARTAS_PALO = 13;
@@ -83,6 +84,7 @@ function create ()
     count=0;
 
     // TODO: barajarlas
+    cartas = baraja(cartas);
 
     // Montones destino
     montonesDestino = new Array(NUM_PALOS);
@@ -399,6 +401,23 @@ function compruebaVictoria()
         i++;   
     }
     return victoria;
+}
+
+function baraja(cartas)
+{
+    // Complejidad lineal (con 'n' swaps) y sin espacio extra, evitando repetidos
+    let aux;
+    for (let k = 0; k < cartas.length; k++)
+    {
+        // Cogemos una carta al azar entre las (len - k) restantes
+        let al = getRandomInt(k, cartas.length);
+        // La cambiamos por la de la posición k-ésima
+        aux = cartas[k];
+        cartas[k] = cartas[al];
+        cartas[al] = aux;
+    }
+
+    return cartas;
 }
 
 //-----------------------------------------------------------------------------------

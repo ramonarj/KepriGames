@@ -6,8 +6,8 @@ let TAM_CASILLA = 64;
 const TAM_SPRITES = 32;
 const TOP_PLAYERS = 5;
 
-//import { muteGame } from '../utils.js';
-import { desdeMovil } from '../utils.js';
+//import { muteGame, desdeMovil } from '../utils.js';
+import { getRandomInt } from "../utils.js";
 
 
 export function muteGame(){
@@ -148,13 +148,6 @@ function Numero(fil, col, valor){
     num.setTint(numberColors[valor - 1]);
 
     return num;
-}
-
-/* Devuelve un entero aleatorio en el rango [min, max) */
-function getRandomInt(min, max) {
-  const minCeiled = Math.ceil(min);
-  const maxFloored = Math.floor(max);
-  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); 
 }
 
 function hundeCasilla(t, fil, col){

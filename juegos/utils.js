@@ -101,3 +101,10 @@ export function createSoundMap(nombres, nombresShared, scene){
     }
     return sonidos;
 }
+
+/* Devuelve un entero aleatorio en el rango [min, max) */
+export function getRandomInt(min, max) {
+  const minCeiled = Math.ceil(min);
+  const maxFloored = Math.floor(max);
+  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); 
+}
