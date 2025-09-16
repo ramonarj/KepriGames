@@ -41,6 +41,8 @@ var mazo;
 var montones = [];
 var montonesDestino = [];
 
+var pilaMovil;
+
 // Auxiliares
 var anchoReal = ANCHO_CARTAS * ESCALA;
 const nombrePalos = ["Rombos", "Corazones", "Treboles", "Picas"];
@@ -70,6 +72,7 @@ function preload ()
 function create ()
 {
     gScene = this;
+    pilaMovil = new Array();
 
     // Crear las 52 cartas para repartirlas entre mazo y montones
     var cartas = new Array(NUM_PALOS * CARTAS_PALO);
@@ -82,8 +85,8 @@ function create ()
     }
     count=0;
 
-    // TODO: barajarlas
-    cartas = baraja(cartas);
+    // Barajarlas
+    //cartas = baraja(cartas);
 
     // Montones destino
     montonesDestino = new Array(NUM_PALOS);
@@ -145,10 +148,38 @@ function Carta(palo, numero, x, y, scene)
     let elThis = this;
 
     // Callbacks
+    carta.on('dragstart', (pointer, dragX, dragY) => {
+        if(carta.texture.key === "reverso") { return; } // TODO: muy feo esto
+
+        cartaSel = elThis;
+        cardClicked();
+        carta.setDepth(600);
+        
+        // Pila móvil
+        if(cartaSel.monton !== null)
+        {
+            let ind = cartaSel.monton.cartas.indexOf(cartaSel);
+            for(let i = ind; i < cartaSel.monton.cartas.length; i++)
+            {
+                pilaMovil.push(cartaSel.monton.cartas[i]);
+                cartaSel.monton.cartas[i].image.setDepth(600 + cartaSel.monton.cartas[i].image.y);
+            }
+            //console.log(pilaMovil);
+        }
+    });
+
     carta.on('drag', (pointer, dragX, dragY) => {
         if(carta.texture.key === "reverso") { return; } // TODO: muy feo esto
 
-        carta.setPosition(dragX, dragY);
+        if(cartaSel.monton === null)
+            carta.setPosition(dragX, dragY);
+
+        else
+        {
+            for(let i = 0; i < pilaMovil.length; i++) {
+                pilaMovil[i].image.setPosition(dragX, dragY + MARGEN_CARTAS_Y * i);
+            }
+        }
     });
 
     carta.on('dragend', (pointer, go) => {
@@ -157,14 +188,17 @@ function Carta(palo, numero, x, y, scene)
         cardDropped();
         carta.setDepth(carta.y);
         cartaSel = null;
+        pilaMovil = [];
     });
 
     carta.on('pointerdown', (pointer, x, y, event) => {
         if(carta.texture.key === "reverso") { return; } 
 
+        /*
         cartaSel = elThis;
         cardClicked();
         carta.setDepth(600);
+        */
     });
 
     this.image = carta;
@@ -258,6 +292,12 @@ function Monton(posX, posY, destino)
     {
         let len = this.cartas.length; let incrY = this.destino ? 0 : MARGEN_CARTAS_Y;
         this.cartas[len - 1].image.setPosition(this.posX, this.posY + (len - 1) * incrY);
+
+        let ind = this.cartas.indexOf(cartaSel);
+        for(let i = 0; i < pilaMovil.length; i++)
+        {
+            pilaMovil[i].image.setPosition(this.posX, this.posY + (ind + i) * incrY);
+        }
     }
 
     this.top = function() { return this.cartas[this.cartas.length - 1]; }
@@ -344,6 +384,7 @@ function puedeColocar(carta, mon)
     // Colocar en los montones destino
     if(mon.destino)
     {
+        if(pilaMovil.length > 1) { return false; }
         if(!mon.vacio())
         {
             let numDestino = mon.top().numero; 
@@ -366,12 +407,32 @@ function colocaCarta(carta, nuevoMonton)
 
     // a) Colocarla físicamente
     let incrY = nuevoMonton.destino ? 0 : MARGEN_CARTAS_Y;
-    carta.image.setPosition(nuevoMonton.posX, nuevoMonton.posY + incrY * (nuevoMonton.cartas.length - 1));
+    if(nuevoMonton.destino) {
+        carta.image.setPosition(nuevoMonton.posX, nuevoMonton.posY + incrY * (nuevoMonton.cartas.length - 1));
+    }
+    else
+    {
+        for(let i = 0; i < pilaMovil.length; i++)
+        {
+            pilaMovil[i].image.setPosition(nuevoMonton.posX,nuevoMonton.posY + (nuevoMonton.cartas.length + i) * incrY);
+            //pilaMovil[i].image.setPosition(nuevoMonton.posX, nuevoMonton.top().image.y + incrY * (i + 1));
+        }
+    }
+
     // b) Sacarla del anterior montón/mazo
     if(carta.monton === null) { mazo.sacaActual(); } // Se ha sacado del mazo
     else
     {
-        carta.monton.pop();
+        if(pilaMovil.length === 0)
+            carta.monton.pop();
+        else
+        {
+            for(let i = 1; i <= pilaMovil.length; i++) {
+                carta.monton.pop();
+            }
+        }
+
+
         if(!carta.monton.vacio())
         {
             // Destapar la de abajo
@@ -382,7 +443,15 @@ function colocaCarta(carta, nuevoMonton)
     }
 
     // c) Ponerla en el nuevo montón
-    nuevoMonton.addCard(carta);
+    if(pilaMovil.length === 0)
+        nuevoMonton.addCard(carta);
+    else {
+        for(let i = 0; i < pilaMovil.length; i++) {
+            nuevoMonton.addCard(pilaMovil[i]);
+        }
+    }
+
+    //nuevoMonton
 
     // d) Comprobar si hemos ganado
     if(compruebaVictoria()) {
