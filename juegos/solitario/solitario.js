@@ -86,7 +86,7 @@ function create ()
     count=0;
 
     // Barajarlas
-    //cartas = baraja(cartas);
+    cartas = baraja(cartas);
 
     // Montones destino
     montonesDestino = new Array(NUM_PALOS);
