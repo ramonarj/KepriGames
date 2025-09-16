@@ -1,7 +1,7 @@
 // Kepri Studios, 2025
-const ANCHO_TECLA = 80;
-const ANCHO_TECLA_NEGRA = 60;
-const ALTO_TECLA = 140;
+const ANCHO_TECLA = 60;
+const ANCHO_TECLA_NEGRA = 20;
+const ALTO_TECLA = 170;
 const NUM_TECLAS = 8;
 const DEBUG_INFO = false;
 const SCORE_FONT = 18;
@@ -17,9 +17,8 @@ var config = {
     }  
 };
 
-var tiempo = 0;
-var gameRunning = false;
-var fpsText;
+
+var pianoSound;
 
 var game = new Phaser.Game(config);
 
@@ -34,42 +33,41 @@ function preload ()
 {
     for(let i = 0; i < sprites.length; i++)
         this.load.image(sprites[i], 'piano/assets/' + sprites[i] + '.png');
+
+    this.load.audio('piano', 'piano/assets/piano.wav');
 }
 
 function create ()
 {
+    pianoSound = this.sound.add('piano', {volume: 0.5});
+
     // Teclas blancas
     for(let i = 0; i < NUM_TECLAS; i++) {
-        this.add.image(i * ANCHO_TECLA, 0, 'teclaBlanca').setOrigin(0, 0);
+        let blanca = this.add.image(i * ANCHO_TECLA, 0, 'teclaBlanca').setOrigin(0, 0).setScale(1.8, 5.25);
+        blanca.setInteractive();
+        blanca.on('pointerdown', (pointer, x, y, event) => {
+            console.log("Pulsada blanca " + i);
+            pianoSound.play();
+        });
     }
 
     const negras = [1, 1, 0, 1, 1, 1, 0];
     for(let i = 0; i < 7; i++) {
         if(negras[i])
-            this.add.image(i * ANCHO_TECLA + ANCHO_TECLA / 2, 0, 'teclaNegra').setOrigin(0, 0);
+        {
+            let negra = this.add.image((i + 1) * ANCHO_TECLA - ANCHO_TECLA_NEGRA, 0, 'teclaNegra').setOrigin(0, 0).setScale(1.15, 2.75);
+            negra.setInteractive();
+            negra.on('pointerdown', (pointer, x, y, event) => {
+                console.log("Pulsada negra " + i);
+                pianoSound.play();
+            });
+        }
     }
-
-    // HUD
-    if(DEBUG_INFO)
-        fpsText = this.add.text(game.config.width - 144, game.config.height - 32, 'FPS', 
-            { fontSize: SCORE_FONT + 'px', fill: '#fff' });
-
-    // Para poder
-    this.time.advancedTiming = true;
-
-    // - - - - Callbacks para el ratón - - - - //
-    this.input.on("pointerdown", mouseDown);
 }
 
 function update (time, delta)
 {
-    if (!gameRunning) { return; }
 
-    // FPS (Nota: está función destroza el rendimiento)
-    if(DEBUG_INFO)
-        fpsText.setText('FPS: ' + game.loop.actualFps);
-
-    tiempo+=delta;
 }
 
 
@@ -80,15 +78,4 @@ function update (time, delta)
 
 //--------------------Callbacks------------------//
 
-function mouseDown(pointer){
-    if(gameRunning) { return; }
 
-    console.log("Clic");
-}
-
-function mouseUp(pointer){
-    // Botón izquierdo
-    if(!pointer.leftButtonReleased){ // ????????
-        //console.log("Botón izquierdo levantado");
-    }
-}

@@ -30,7 +30,6 @@ var config = {
 var gScene;
 
 // Sonidos
-var selectSound;
 var mazoSound;
 var popSound;
 var errorSound;
@@ -274,6 +273,7 @@ function Monton(posX, posY, destino)
 //--------------------Callbacks------------------//
 
 function cardClicked(){
+    //gScene.sound.play("pop"); // Se puede hacer, pero no conserva el volumen dado al inicio
     popSound.play();
 }
 
@@ -295,7 +295,8 @@ function cardDropped(pointer, dragX, dragY)
         colocaCarta(cartaSel, mon);
     else // Error colocando
     {
-        errorSound.play();
+        gScene.sound.play("error");
+        //errorSound.play();
 
         // Devolverla a su sitio físicamente, TODO: hacer animación para que vuelva a su sitio
         if(cartaSel.monton === null) { mazo.devuelve(); } // Venía del mazo
