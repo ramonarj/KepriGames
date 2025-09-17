@@ -193,6 +193,7 @@ async function LeeNivel(file, nivel) // string, int
 {
     //Creamos el lector de archivo "Niveles.txt"
     let niveles = (await readAsync(file)).split('\n');
+    console.log(niveles);
     let s = "";
 
     //Recorremos el archivo hasta llegar al nivel
