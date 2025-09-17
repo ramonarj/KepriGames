@@ -40,7 +40,7 @@ var contador = 0;
 var movimientos = [];
 var player;
 var scoreText;
-var nivel = 7; // TODO: a partir del 8 inclusive falla
+var nivel = 0; // TODO: a partir del 8 inclusive falla
 
 var sonidos;
 var nombresSonidos = ['fanfare', 'error', 'empujar', 'click'];
@@ -48,7 +48,6 @@ var musica;
 
 function preload ()
 {
-    this.load.image('fondo', 'sokoban/assets/');
     this.load.image('blanco', 'sokoban/assets/blanco.png');
     this.load.image('caja', 'sokoban/assets/caja.png');4
     this.load.image('muro', 'sokoban/assets/muro.png');
@@ -63,10 +62,6 @@ function preload ()
 
 function create ()
 {
-    // No sé qué es esto pero queda bien
-    //this.add.image(0, 0, 'fondo').setScale(game.config.width, game.config.height);
-    //this.add.image(32, 32, 'bloque').setScale(TAM_CASILLA, TAM_CASILLA);
-
     player = game.scene.scenes[0].add.image(0, 0, 'player');
     player.setDepth(FOREGROUND_LAYER);
 
@@ -90,7 +85,6 @@ function create ()
     musica.loop = true;
     musica.play();
 
-    console.log("Create");
     this.input.keyboard.on('keydown', onKeyDown);
 }
 
@@ -98,8 +92,6 @@ async function initBoard(){
     tab = await LeeNivel("levels.txt", nivel);
 
     DibujaTablero(tab, 0);
-    console.log(tab.fils);
-    console.log(tab.cols);
 
     // Reducir el tamaño del canvas a lo necesario
     game.canvas.width = tab.cols * TAM_CASILLA;

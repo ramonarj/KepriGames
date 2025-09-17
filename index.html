@@ -21,16 +21,24 @@
 
         let enMovil = regexp.test(navigator.userAgent);
 
+        // Ver desde dónde nos visitan
+        //window.navigator.geolocation.getCurrentPosition(success);
+
         if (enMovil) {
-            var foto = document.createElement("img");
-            foto.innerHTML = `
-            <img src="../assets/star.png" width="20" height="20">
-            `
-            //document.querySelectorAll("canvas")[0].appendChild(foto);
             //prompt("Bienvenido desde móvil");
             console.log("Bienvenido desde móvil");
         } else {
             console.log("Bienvenido desde PC");
+        }
+
+        function success(pos)
+        {
+            const crd = pos.coords;
+
+            console.log("Your current position is:");
+            console.log(`Latitude : ${crd.latitude}`);
+            console.log(`Longitude: ${crd.longitude}`);
+            console.log(`More or less ${crd.accuracy} meters.`);
         }
     </script>
     <!-- Barra lateral -->
