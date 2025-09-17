@@ -205,10 +205,11 @@ async function LeeNivel(file, nivel) // string, int
 
     //Creamos el tablero vacío
     var tab = CreaTableroVacio(FILAS, COLUMNAS);
+    console.log(tab);
     
     //Mientras no hayamos llegado al final del nivel:
     let i = 0; //Fila 
-    while (s !== '\r')//&& !entrada.EndOfStream)
+    while (s !== '\r' && s !== '')//&& !entrada.EndOfStream)
     {
         s = niveles[k]; k++; //Leemos la línea
         let j = 0; //Nos situamos en el primer caracter de la línea
@@ -218,7 +219,6 @@ async function LeeNivel(file, nivel) // string, int
 
         while (s !== "" && j < s.length)
         {
-            //console.log(s[j]);
             //Convertimos cada caracter de la cadena de esa línea y comprobamos de qué casilla se trata
             //
             //    NOTA: no leemos las almohadillas, porque hemos inicializado la matriz de Casillas
@@ -226,7 +226,7 @@ async function LeeNivel(file, nivel) // string, int
             //
             if (s[j] === ' ') //Casilla vacía
             {
-                tab.fijas[i][j] = Casilla.Libre;
+                tab.fijas[i][j] = Casilla.Libre; // TODO: arreglar este error
             }
             else if (s[j] === '.') //Casilla destino
             {
