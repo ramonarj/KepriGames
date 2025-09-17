@@ -62,6 +62,8 @@ function preload ()
 
 function create ()
 {
+    contador = 0;
+    gameOver = false;
     player = game.scene.scenes[0].add.image(0, 0, 'player');
     player.setDepth(FOREGROUND_LAYER);
 
@@ -186,8 +188,6 @@ async function readAsync(file){
     return levels;
 }
 
-
-
 //4.LECTURA DE UN NIVEL SOLICITADO
 async function LeeNivel(file, nivel) // string, int
 {
@@ -198,7 +198,7 @@ async function LeeNivel(file, nivel) // string, int
 
     //Recorremos el archivo hasta llegar al nivel
     let k = 0;
-    while (k < 100 && s !== ("Level " + nivel + '\r')){
+    while (k < 800 && s !== ("Level " + nivel + '\r')){
         s = niveles[k];
         k++;
     }
@@ -214,6 +214,7 @@ async function LeeNivel(file, nivel) // string, int
         s = niveles[k]; k++; //Leemos la línea
         let j = 0; //Nos situamos en el primer caracter de la línea
                     //Comprobamos el ancho del nivel
+        console.log(s.length);
         if (tab.cols < s.length)
             tab.cols = s.length;
 
@@ -315,7 +316,6 @@ function DibujaTablero(tab, mov)
         }
     }
 }
-
 
 //7.COMPROBACIÓN DEL LÍMITE DE LA PANTALLA
 function Siguiente(x, y, dir, tab, newPos) //newPos sale por referencia
@@ -435,7 +435,8 @@ function Terminado(tab)
 function SiguienteNivel(){
     console.log("Siguiente nivel");
     console.log(game.scene);
-
+    musica.stop();
+    nivel++;
     game.scene.scenes[0].registry.destroy(); // destroy registry
     game.scene.scenes[0].events.off();// disable all active events
     game.scene.scenes[0].scene.restart();
@@ -461,6 +462,9 @@ function onKeyDown(event){
     }
     else if(event.key === "Backspace"){
         dir ='z';
+    }
+    else if(event.key === "N" || event.key === "n"){
+        SiguienteNivel();
     }
     else return;
 
