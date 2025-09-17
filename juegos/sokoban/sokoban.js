@@ -198,7 +198,7 @@ async function LeeNivel(file, nivel) // string, int
 
     //Recorremos el archivo hasta llegar al nivel
     let k = 0;
-    while (k < 800 && s !== ("Level " + nivel + '\r')){
+    while (k < 800 && (s !== ("Level " + nivel + '\r') && (s !== ("Level " + nivel)))){
         s = niveles[k];
         k++;
     }
